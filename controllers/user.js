@@ -5,11 +5,14 @@ const generateReferralCode = require('../utils/generateReferralCode');
 const { sendEmail } = require('../utils/nodemailer');
 const { initReferral, promoteVisitorToReferral } = require('./referral')
 
+const { createWallet } = require('./wallet');
+
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
 const register = async (req, res) => {
-   try {
+  try {
     const { email, pin, referralCode } = req.body;
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
@@ -19,11 +22,12 @@ const register = async (req, res) => {
     const userReferralCode = generateReferralCode();
 
     const newUser = new User({
-        email,
-        pinHash,
-        referralCode: userReferralCode,
-        referredBy: referralCode || null
+      email,
+      pinHash,
+      referralCode: userReferralCode,
+      referredBy: referralCode || null
     });
+
     await newUser.save();
 
     const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
@@ -44,21 +48,32 @@ const register = async (req, res) => {
     console.log(error.message)
     res.status(500).json({ message: 'Failed to register user' + error});
    }
+
+    await createWallet(newUser._id);
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
+    res.status(201).json({ message: 'User registered successfully', token });
+  } catch (error) {
+    cconsole.log(error.message)
+    res.status(500).json({ message: 'Failed to register user' + error });
+  }
+
 };
 
 // Login
 const login = async (req, res) => {
-   try {
+  try {
     const { email, pin } = req.body;
-    const user = await User.findOne({ email : email.toLowerCase()});
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user || !(await user.comparePIN(pin))) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign({ id: user._id }, JWT_SECRET);
     res.status(200).json({ message: 'User logged in successfully', token });
-   } catch (error) {
+  } catch (error) {
     res.status(500).json({ message: 'Failed to login user' });
-   }
+  }
 };
 
 
@@ -74,7 +89,7 @@ const forgotPassword = async (req, res) => {
 
     // Save OTP and expiration (e.g., 15 minutes) to user document
     user.passwordResetOtp = otp;
-    user.passwordResetOtpExpires = Date.now() + 10 * 60 * 1000; 
+    user.passwordResetOtpExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
 
     await sendEmail({
@@ -96,7 +111,7 @@ const forgotPassword = async (req, res) => {
   </body>
 </html>
     `})
-   
+
     res.status(200).json({ message: 'OTP sent successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Failed to send OTP: ' + error.message });
@@ -140,9 +155,8 @@ const resetPassword = async (req, res) => {
 
 // Activate Account
 const activate = async (req, res) => {
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
+  const user = await User.findById(req.user.id);
+  if (!user) return res.status(404).json({ message: 'User not found' });
     await promoteVisitorToReferral(user._id);
 
     if (user.balance >= 2.15) {
@@ -153,12 +167,13 @@ const activate = async (req, res) => {
     } else {
         res.status(400).json({ message: 'Insufficient balance to activate account' });
     }
+
 };
- 
+
 module.exports = {
-    register,
-    login,
-    forgotPassword,
-    resetPassword,
-    activate
+  register,
+  login,
+  forgotPassword,
+  resetPassword,
+  activate
 }
