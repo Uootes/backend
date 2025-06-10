@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const Exchanger = require('../models/exchanger');
 const { sendEmail } = require('../utils/nodemailer');
 
+const exchangerWallet = require('../models/userWallet');
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
@@ -123,9 +125,13 @@ const activate = async (req, res) => {
     const exchanger = await Exchanger.findById(req.user.id);
     if (!exchanger) return res.status(404).json({ message: 'Exchanger not found' });
 
-    if (exchanger.balance >= 2.15) {
-        exchanger.balance -= 2.15;
+    const wallet = await exchangerWallet.findOne({ userId: exchanger._id });
+    if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
+
+    if (wallet.GSCBalance >= 2.15) {
+        wallet.GSCBalance -= 2.15;
         exchanger.activationStatus = true;
+        await wallet.save();
         await exchanger.save();
         res.json({ message: 'Account activated' });
     } else {
