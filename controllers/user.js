@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const generateReferralCode = require('../utils/generateReferralCode');
 const { sendEmail } = require('../utils/nodemailer');
-
+const { initReferral, promoteVisitorToReferral } = require('./referral')
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -24,13 +24,24 @@ const register = async (req, res) => {
         referralCode: userReferralCode,
         referredBy: referralCode || null
     });
-
     await newUser.save();
 
     const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
+
+    if (referralCode) {
+        const referrerUser = await User.findOne({ referralCode: referralCode });
+        if (referrerUser) {
+            await initReferral(newUser._id, referrerUser._id);
+        } else {
+            await initReferral(newUser._id, null);
+        }
+    } else {
+        await initReferral(newUser._id, null);
+    }
+
     res.status(201).json({ message: 'User registered successfully', token });  
    } catch (error) {
-    cconsole.log(error.message)
+    console.log(error.message)
     res.status(500).json({ message: 'Failed to register user' + error});
    }
 };
@@ -67,7 +78,7 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     await sendEmail({
-        email: rider.email,
+        email: user.email,
         subject: 'Reset your Password',
         html: `
       <!DOCTYPE html>
@@ -131,6 +142,8 @@ const resetPassword = async (req, res) => {
 const activate = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    await promoteVisitorToReferral(user._id);
 
     if (user.balance >= 2.15) {
         user.balance -= 2.15;
