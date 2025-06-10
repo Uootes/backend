@@ -1,5 +1,5 @@
 const userModel = require('../models/user');
-const walletModel = require('../models/wallet');
+const walletModel = require('../models/userWallet');
 
 
 exports.createWallet = async (userId) => {
