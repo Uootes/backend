@@ -3,6 +3,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const generateReferralCode = require('../utils/generateReferralCode');
 const { sendEmail } = require('../utils/nodemailer');
+const { initReferral, promoteVisitorToReferral } = require('./referral')
+
 const { createWallet } = require('./wallet');
 
 
@@ -26,6 +28,27 @@ const register = async (req, res) => {
       referredBy: referralCode || null
     });
 
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
+
+    if (referralCode) {
+        const referrerUser = await User.findOne({ referralCode: referralCode });
+        if (referrerUser) {
+            await initReferral(newUser._id, referrerUser._id);
+        } else {
+            await initReferral(newUser._id, null);
+        }
+    } else {
+        await initReferral(newUser._id, null);
+    }
+
+    res.status(201).json({ message: 'User registered successfully', token });  
+   } catch (error) {
+    console.log(error.message)
+    res.status(500).json({ message: 'Failed to register user' + error});
+   }
+
     await createWallet(newUser._id);
     await newUser.save();
 
@@ -35,6 +58,7 @@ const register = async (req, res) => {
     cconsole.log(error.message)
     res.status(500).json({ message: 'Failed to register user' + error });
   }
+
 };
 
 // Login
@@ -69,9 +93,9 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     await sendEmail({
-      email: rider.email,
-      subject: 'Reset your Password',
-      html: `
+        email: user.email,
+        subject: 'Reset your Password',
+        html: `
       <!DOCTYPE html>
 <html>
   <body style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px;">
@@ -133,15 +157,17 @@ const resetPassword = async (req, res) => {
 const activate = async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ message: 'User not found' });
+    await promoteVisitorToReferral(user._id);
 
-  if (user.balance >= 2.15) {
-    user.balance -= 2.15;
-    user.activationStatus = true;
-    await user.save();
-    res.json({ message: 'Account activated' });
-  } else {
-    res.status(400).json({ message: 'Insufficient balance to activate account' });
-  }
+    if (user.balance >= 2.15) {
+        user.balance -= 2.15;
+        user.activationStatus = true;
+        await user.save();
+        res.json({ message: 'Account activated' });
+    } else {
+        res.status(400).json({ message: 'Insufficient balance to activate account' });
+    }
+
 };
 
 module.exports = {

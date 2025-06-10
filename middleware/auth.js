@@ -18,6 +18,7 @@ const auth = async (req, res, next) => {
         }
   
         req.token = decoded;
+        req.user = decoded;
         next();
       });
     } catch (err) {
