@@ -6,7 +6,7 @@ const { sendEmail } = require('../utils/nodemailer');
 const { initReferral, promoteVisitorToReferral } = require('./referral')
 
 const { createWallet } = require('./wallet');
-
+const userWallet = require('../models/userWallet');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -43,23 +43,17 @@ const register = async (req, res) => {
         await initReferral(newUser._id, null);
     }
 
-    res.status(201).json({ message: 'User registered successfully', token });  
-   } catch (error) {
-    console.log(error.message)
-    res.status(500).json({ message: 'Failed to register user' + error});
-   }
-
     await createWallet(newUser._id);
     await newUser.save();
-
-    const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
+    
     res.status(201).json({ message: 'User registered successfully', token });
   } catch (error) {
-    cconsole.log(error.message)
+    console.log(error.message)
     res.status(500).json({ message: 'Failed to register user' + error });
   }
+}
 
-};
+
 
 // Login
 const login = async (req, res) => {
@@ -157,17 +151,22 @@ const resetPassword = async (req, res) => {
 const activate = async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user) return res.status(404).json({ message: 'User not found' });
+
+  const wallet = await userWallet.findOne({ userId: user._id });
+  if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
+
+  await promoteVisitorToReferral(user._id);
+
+  if (wallet.GSCBalance >= 2.15) {
+    wallet.GSCBalance -= 2.15;
+    user.activationStatus = true;
     await promoteVisitorToReferral(user._id);
-
-    if (user.balance >= 2.15) {
-        user.balance -= 2.15;
-        user.activationStatus = true;
-        await user.save();
-        res.json({ message: 'Account activated' });
-    } else {
-        res.status(400).json({ message: 'Insufficient balance to activate account' });
-    }
-
+    await wallet.save();
+    await user.save();
+    res.json({ message: 'Account activated' });
+  } else {
+    res.status(400).json({ message: 'Insufficient balance to activate account' });
+  }
 };
 
 module.exports = {
@@ -176,4 +175,4 @@ module.exports = {
   forgotPassword,
   resetPassword,
   activate
-}
+};
