@@ -32,8 +32,8 @@ const router = require('express').Router()
  *                 example: user@example.com
  *               pin:
  *                 type: string
- *                 description: 4-6 digit PIN
- *                 example: "1234"
+ *                 description: 6 digit PIN
+ *                 example: "123456"
  *               referralCode:
  *                 type: string
  *                 description: Optional referral code
@@ -272,8 +272,15 @@ router.post('/resetPassword', resetPassword)
  * /api/v1/activate:
  *   post:
  *     summary: Activate user account
- *     description: Activates the user's account by checking wallet balance and deducting activation fee
+ *     description: |
+ *       Activates the user's account by:
+ *       - Verifying minimum 2.15 GSC balance
+ *       - Deducting activation fee
+ *       - Updating account status
+ *       - Processing referral promotion
  *     tags: [User Authentication]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: Account activated successfully
@@ -285,8 +292,12 @@ router.post('/resetPassword', resetPassword)
  *                 message:
  *                   type: string
  *                   example: Account activated successfully
+ *                 newBalance:
+ *                   type: number
+ *                   example: 10.85
+ *                   description: Remaining GSC balance
  *       400:
- *         description: Insufficient balance for activation
+ *         description: Insufficient balance (requires ≥2.15 GSC) or other client error
  *         content:
  *           application/json:
  *             schema:
@@ -294,9 +305,28 @@ router.post('/resetPassword', resetPassword)
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Insufficient balance for activation
- */
-router.post('/activate', auth, activate)
+ *                   example: Insufficient balance to activate account
+ *       401:
+ *         description: Unauthorized (invalid/missing token)
+ *       404:
+ *         description: User or wallet not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Wallet not found
+ *       500:
+ *         description: Server error during activation
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */ router.post('/activate', auth, activate)
 
 
 module.exports = router;
