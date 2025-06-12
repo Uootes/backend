@@ -1,4 +1,5 @@
 require('dotenv').config();
+// console.log('CI ENV: MONGO_URI is', process.env.MONGODB_URL); 
 require('./config/database');
 const express = require('express');
 const PORT = process.env.PORT;

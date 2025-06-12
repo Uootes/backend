@@ -25,18 +25,18 @@ jobs:
       with:
         node-version: '22.x'
 
-    - name: Install dependencies
-      run: npm install
-
     - name: Create dummy .env file
       run: |
         echo "PORT=2030" >> .env
-        echo "MONGO_URI=mongodb://localhost:27017/test" >> .env
+        echo "MONGODB_URL=mongodb://localhost:27017/test" >> .env
         echo "JWT_SECRET=testsecret" >> .env
+
+    - name: Install dependencies
+      run: npm install
 
     - name: Start server and perform health check
       run: |
         node sever.js > output.log 2>&1 &
         sleep 5
         cat output.log
-        curl -f http://localhost:2030 || exit 1
+        curl -f http://localhost:2030/api-docs || exit 1
