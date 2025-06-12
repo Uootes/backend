@@ -1,4 +1,5 @@
 require('dotenv').config();
+// console.log('CI ENV: MONGO_URI is', process.env.MONGODB_URL); 
 require('./config/database');
 const express = require('express');
 const PORT = process.env.PORT;
@@ -9,6 +10,7 @@ const swaggerUi = require('swagger-ui-express');
 const   userRouter = require('./routes/user');
 const exchangerRouter = require('./routes/exchanger');
 const referralRoutes = require('./routes/referral');
+const taskRoutes = require('./routes/task')
 
 const swaggerOptions = {
   definition: {
@@ -18,7 +20,7 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'Uootes is solving is that earning money is challenging and difficult due to the advancement of technology and job scarcity. Uootes aims to make earning easy and accessible.',
     },
-    servers: [
+    servers: [ 
       { 
         url: `http://localhost:2030`, 
         description: 'Local server' 
@@ -40,6 +42,7 @@ app.use(morgan('combined'));
 app.use('/api/v1', userRouter);
 app.use('/api/v1', exchangerRouter);
 app.use('/referral', referralRoutes);
+app.use('/task', taskRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
