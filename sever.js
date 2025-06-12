@@ -10,14 +10,13 @@ const   userRouter = require('./routes/user');
 const exchangerRouter = require('./routes/exchanger');
 const referralRoutes = require('./routes/referral');
 
-// ======== Swagger Configuration ========
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Your API Documentation',
+      title: 'API Documentation For Uootes',
       version: '1.0.0',
-      description: 'API for user, exchanger, and referral services',
+      description: 'Uootes is solving is that earning money is challenging and difficult due to the advancement of technology and job scarcity. Uootes aims to make earning easy and accessible.',
     },
     servers: [
       { 
@@ -30,7 +29,7 @@ const swaggerOptions = {
       }
     ],
   },
-  apis: ['./routes/*.js'], // Path to your route files
+  apis: ['./routes/*.js'], 
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -42,10 +41,8 @@ app.use('/api/v1', userRouter);
 app.use('/api/v1', exchangerRouter);
 app.use('/referral', referralRoutes);
 
-// ======== Swagger UI ========
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// ======== Start Server ========
 app.listen(PORT, () => {
   console.log(`Server is listening to Port: ${PORT}`);
 });
