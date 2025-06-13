@@ -53,8 +53,6 @@ const register = async (req, res) => {
   }
 }
 
-
-
 // Login
 const login = async (req, res) => {
   try {
@@ -69,8 +67,6 @@ const login = async (req, res) => {
     res.status(500).json({ message: 'Failed to login user' });
   }
 };
-
-
 
 const forgotPassword = async (req, res) => {
   try {
