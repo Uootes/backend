@@ -1,0 +1,42 @@
+name: UOOTES Backend Basic CI Check
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    services:
+      mongo:
+        image: mongo:6.0
+        ports:
+          - 27017:27017
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22.x'
+
+    - name: Create dummy .env file
+      run: |
+        echo "PORT=2030" >> .env
+        echo "MONGODB_URL=mongodb://localhost:27017/test" >> .env
+        echo "JWT_SECRET=testsecret" >> .env
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Start server and perform health check
+      run: |
+        node sever.js > output.log 2>&1 &
+        sleep 5
+        cat output.log
+        curl -f http://localhost:2030/api-docs || exit 1

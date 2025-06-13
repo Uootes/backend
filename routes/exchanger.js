@@ -26,9 +26,9 @@ const router = require('express').Router();
  *               email:
  *                 type: string
  *                 example: exchanger@example.com
- *               password:
+ *               pin:
  *                 type: string
- *                 example: password123
+ *                 example: 123456
  *     responses:
  *       201:
  *         description: Exchanger registered successfully
@@ -63,9 +63,9 @@ router.post('/signUp-exchanger', register);
  *               email:
  *                 type: string
  *                 example: exchanger@example.com
- *               password:
+ *               pin:
  *                 type: string
- *                 example: password123
+ *                 example: 123456
  *     responses:
  *       200:
  *         description: Login successful
@@ -131,12 +131,15 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *           schema:
  *             type: object
  *             properties:
- *               token:
+ *               email:
  *                 type: string
- *                 example: reset-token
- *               newPassword:
+ *                 example: exchanger@example.com
+ *               otp:
  *                 type: string
- *                 example: newpassword123
+ *                 example: 123456
+ *               newPin:
+ *                 type: string
+ *                 example: 678909
  *     responses:
  *       200:
  *         description: Password reset successful
@@ -154,31 +157,5 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *                   example: "Error resetting password: <error-message>"
  */
 router.post('/resetPassword-exchanger', resetPassword);
-
-/**
- * @swagger
- * /api/v1/activate-exchanger:
- *   post:
- *     summary: Activate exchanger account
- *     tags: [Exchanger]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Account activated successfully
- *       401:
- *         description: Unauthorized
- *       500:
- *         description: Internal Server Error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Error activating account: <error-message>"
- */
-router.post('/activate-exchanger', auth, activate);
 
 module.exports = router;
