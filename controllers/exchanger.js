@@ -122,29 +122,10 @@ const resetPassword = async (req, res) => {
   }
 };
 
-// Activate Account
-const activate = async (req, res) => {
-    const exchanger = await Exchanger.findById(req.user.id);
-    if (!exchanger) return res.status(404).json({ message: 'Exchanger not found' });
-
-    const wallet = await exchangerWallet.findOne({ userId: exchanger._id });
-    if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
-
-    if (wallet.GSCBalance >= 2.15) {
-        wallet.GSCBalance -= 2.15;
-        exchanger.activationStatus = true;
-        await wallet.save();
-        await exchanger.save();
-        res.json({ message: 'Account activated' });
-    } else {
-        res.status(400).json({ message: 'Insufficient balance to activate account' });
-    }
-};
 
 module.exports = {
     register,
     login,
     forgotPassword,
-    resetPassword,
-    activate
+    resetPassword
 };
