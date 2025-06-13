@@ -4,6 +4,7 @@ const Exchanger = require('../models/exchanger');
 const { sendEmail } = require('../utils/nodemailer');
 
 const exchangerWallet = require('../models/userWallet');
+const { createWallet } = require('./exhangerWallet');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -22,6 +23,7 @@ const register = async (req, res) => {
         pinHash
     });
 
+    await createWallet(newExchanger._id);
     await newExchanger.save();
 
     const token = jwt.sign({ id: newExchanger._id }, JWT_SECRET);
