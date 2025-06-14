@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const walletSchema = new mongoose.Schema({
+const userWalletSchema = new mongoose.Schema({
     userId: { type: mongoose.SchemaTypes.ObjectId },
     GSCBalance: { type: Number, default: 0 },
     CPTBalance: { type: Number, default: 0 },
@@ -10,6 +10,6 @@ const walletSchema = new mongoose.Schema({
     ledger: { type: Number, default: 0 },
 }, { timestamps: true });
 
-const walletModel = mongoose.model('wallets', walletSchema);
+const userWalletModel = mongoose.model('userWallets', userWalletSchema);
 
-module.exports = walletModel;
+module.exports = userWalletModel;

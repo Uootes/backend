@@ -1,16 +1,16 @@
 const userModel = require('../models/user');
-const walletModel = require('../models/exchangerWallet');
+const exchangerWalletModel = require('../models/exchangerWallet');
 
 
 exports.createWallet = async (exchangerId) => {
   try {
-    const existingWallet = await walletModel.findOne({ exchangerId });
+    const existingWallet = await exchangerWalletModel.findOne({ exchangerId });
 
     if (existingWallet) {
       console.log('Wallet for this exchanger already exist')
     };
 
-    const wallet = new walletModel({
+    const wallet = new exchangerWalletModel({
       exchangerId
     });
 
