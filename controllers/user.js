@@ -37,7 +37,7 @@ const register = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 10);
     const userReferralCode = generateReferralCode();
-    
+
     if (!userReferralCode) {
       return res.status(500).json({ message: 'Failed to generate referral code' });
     }
@@ -59,9 +59,9 @@ const register = async (req, res) => {
 
     // Initialize referral relationship
     await initReferral(newUser._id, referrerUser?._id || null);
-    
-    res.status(201).json({ 
-      message: 'User registered successfully', 
+
+    res.status(201).json({
+      message: 'User registered successfully',
       token,
       user: {
         id: newUser._id,
@@ -81,7 +81,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
@@ -92,8 +92,8 @@ const login = async (req, res) => {
     }
 
     const token = jwt.sign({ id: user._id }, JWT_SECRET);
-    res.status(200).json({ 
-      message: 'User logged in successfully', 
+    res.status(200).json({
+      message: 'User logged in successfully',
       token,
       user: {
         id: user._id,
