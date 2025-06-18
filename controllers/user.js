@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 const generateReferralCode = require('../utils/generateReferralCode');
 const { sendEmail } = require('../utils/nodemailer');
-const { initReferral, promoteVisitorToReferral, upgradeAccount } = require('./referral');
+const { initReferral, promoteVisitorToReferral } = require('./referral');
 const { createWallet } = require('./userWallet');
 const userWallet = require('../models/userWallet');
 
