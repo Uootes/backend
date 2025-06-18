@@ -4,7 +4,7 @@ const User = require('../models/user');
 const generateReferralCode = require('../utils/generateReferralCode');
 const { sendEmail } = require('../utils/nodemailer');
 const { initReferral, promoteVisitorToReferral, upgradeAccount } = require('./referral');
-const { createWallet } = require('../controllers/userWallet');
+const { createWallet } = require('./userWallet');
 const userWallet = require('../models/userWallet');
 
 const JWT_SECRET = process.env.JWT_SECRET;
