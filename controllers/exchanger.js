@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const Exchanger = require('../models/exchanger');
 const { sendEmail } = require('../utils/nodemailer');
 
+const exchangerWallet = require('../models/userWallet');
+const { createWallet } = require('./exhangerWallet');
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
@@ -35,6 +38,7 @@ const register = async (req, res) => {
         activationStatus: false
     });
 
+    await createWallet(newExchanger._id);
     await newExchanger.save();
 
     // Send welcome email
