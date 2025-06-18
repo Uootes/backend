@@ -22,13 +22,32 @@ const router = require('express').Router();
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - firstName
+ *               - lastName
+ *               - country
+ *               - email
+ *               - password
+ *               - confirmPassword
  *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               country:
+ *                 type: string
+ *                 example: USA
  *               email:
  *                 type: string
  *                 example: exchanger@example.com
- *               pin:
+ *               password:
  *                 type: string
- *                 example: 123456
+ *                 example: password123
+ *               confirmPassword:
+ *                 type: string
+ *                 example: password123
  *     responses:
  *       201:
  *         description: Exchanger registered successfully
@@ -59,13 +78,16 @@ router.post('/signUp-exchanger', register);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
+ *               - password
  *             properties:
  *               email:
  *                 type: string
  *                 example: exchanger@example.com
- *               pin:
+ *               password:
  *                 type: string
- *                 example: 123456
+ *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful
@@ -96,6 +118,8 @@ router.post('/login-exchanger', login);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - email
  *             properties:
  *               email:
  *                 type: string
@@ -130,16 +154,20 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *         application/json:
  *           schema:
  *             type: object
+ *             required:
+ *               - otp
+ *               - newPassword
+ *               - confirmPassword
  *             properties:
- *               email:
- *                 type: string
- *                 example: exchanger@example.com
  *               otp:
  *                 type: string
  *                 example: 123456
- *               newPin:
+ *               newPassword:
  *                 type: string
- *                 example: 678909
+ *                 example: newpassword123
+ *               confirmPassword:
+ *                 type: string
+ *                 example: newpassword123
  *     responses:
  *       200:
  *         description: Password reset successful
