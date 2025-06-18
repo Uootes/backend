@@ -1,7 +1,7 @@
 const Referral = require("../models/referral");
 const User = require("../models/user");
 
-exports.initReferral = async (newUserId, referredById) => {
+const initReferral = async (newUserId, referredById) => {
   const existingReferral = await Referral.findOne({ userId: newUserId });
   if (existingReferral) {
     throw new Error("User already has a referral document");
@@ -24,7 +24,7 @@ exports.initReferral = async (newUserId, referredById) => {
     }
 };
 
-exports.promoteVisitorToReferral = async (userId) => {
+const promoteVisitorToReferral = async (userId) => {
     try {
         // find the person thy referred
         const userReferral = await Referral.findOne({ userId });
@@ -142,9 +142,9 @@ const getReferralAndVisitorsCount = async (req, res) => {
 };
 
 module.exports = {
+    initReferral,
+    promoteVisitorToReferral,
   upgradeAccount,
   getReferralInfo,
-    upgradeAccount,
-    getReferralInfo,
-    getReferralAndVisitorsCount
+  getReferralAndVisitorsCount
 };

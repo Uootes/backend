@@ -23,21 +23,43 @@ const router = require('express').Router()
  *           schema:
  *             type: object
  *             required:
+ *               - firstName
+ *               - lastName
  *               - email
- *               - pin
+ *               - password
+ *               - confirmPassword
+ *               - country
  *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
  *               email:
  *                 type: string
  *                 format: email
  *                 example: user@example.com
- *               pin:
+ *               password:
  *                 type: string
- *                 description: 6 digit PIN
- *                 example: "123456"
+ *                 format: password
+ *                 minLength: 6
+ *                 description: Must be at least 6 characters
+ *                 example: "password123"
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *                 description: Must match password
+ *                 example: "password123"
+ *               country:
+ *                 type: string
+ *                 example: USA
  *               referralCode:
  *                 type: string
- *                 description: Optional referral code
- *                 example: "REF123"
+ *                 minLength: 8
+ *                 maxLength: 10
+ *                 description: Optional valid referral code
+ *                 example: "GSCSO9Q50"
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -53,16 +75,47 @@ const router = require('express').Router()
  *                   type: string
  *                   description: JWT authentication token
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: 507f1f77bcf86cd799439011
+ *                     firstName:
+ *                       type: string
+ *                       example: John
+ *                     lastName:
+ *                       type: string
+ *                       example: Doe
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
  *       400:
  *         description: Bad request
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Email already in use
+ *               oneOf:
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: All fields are required
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Passwords do not match
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Email already in use
+ *                 - type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                       example: Invalid referral code
  *       500:
  *         description: Internal server error
  *         content:
@@ -74,7 +127,6 @@ const router = require('express').Router()
  *                   type: string
  *                   example: Failed to register user
  */
-
 router.post('/signUp', register);
 
 /**
@@ -91,16 +143,16 @@ router.post('/signUp', register);
  *             type: object
  *             required:
  *               - email
- *               - pin
+ *               - password
  *             properties:
  *               email:
  *                 type: string
  *                 format: email
  *                 example: user@example.com
- *               pin:
+ *               password:
  *                 type: string
  *                 description: User's 6-digit PIN
- *                 example: "123456"
+ *                 example: "password123"
  *     responses:
  *       200:
  *         description: User authenticated successfully
@@ -154,6 +206,8 @@ router.post('/login', login)
  *             type: object
  *             required:
  *               - email
+ *               - otp
+ *               - newPin
  *             properties:
  *               email:
  *                 type: string
@@ -207,23 +261,21 @@ router.post('/forgotPassword', forgotPassword)
  *           schema:
  *             type: object
  *             required:
- *               - email
  *               - otp
  *               - newPin
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *                 example: user@example.com
- *                 description: User's registered email
  *               otp:
  *                 type: string
  *                 example: "123456"
  *                 description: 6-digit OTP received via email
- *               newPin:
+ *               newPassword:
  *                 type: string
- *                 example: "654321"
- *                 description: New 6-digit PIN to set
+ *                 example: "newpassword123"
+ *                 description: New password to set
+ *               confirmPassword:
+ *                 type: string
+ *                 example: "newpassword123"
+ *                 description: Confirm new password
  *     responses:
  *       200:
  *         description: Password reset successful
