@@ -6,6 +6,7 @@ const { sendEmail } = require('../utils/nodemailer');
 const { initReferral, promoteVisitorToReferral } = require('./referral');
 const { createWallet } = require('./userWallet');
 const userWallet = require('../models/userWallet');
+const { getActivationToken } = require('../utils/companyWallet');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -208,6 +209,7 @@ const activate = async (req, res) => {
     if (wallet.GSCBalance >= 2.15) {
       wallet.GSCBalance -= 2.15;
       user.activationStatus = true;
+      await getActivationToken(2.15);
       await promoteVisitorToReferral(user._id);
       await wallet.save();
       await user.save();
