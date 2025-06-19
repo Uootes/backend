@@ -7,6 +7,7 @@ const userWalletSchema = new mongoose.Schema({
     totalPurchasedCPT: { type: Number, default: 0 },
     poolBalance: { type: Number, default: 0 },
     incubatorBalance: { type: Number, default: 0 },
+    incubatorTimeStamp: { type: Number, default: 0 },
     ledger: { type: Number, default: 0 },
 }, { timestamps: true });
 

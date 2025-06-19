@@ -7,10 +7,12 @@ const app = express();
 const morgan = require('morgan');
 const swaggerJsdoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const   userRouter = require('./routes/user');
+const userRouter = require('./routes/user');
 const exchangerRouter = require('./routes/exchanger');
 const referralRoutes = require('./routes/referral');
-const taskRoutes = require('./routes/task')
+const taskRoutes = require('./routes/task');
+const cron = require('node-cron');
+const { splittingRevenue } = require('./utils/splitRevenue');
 
 const swaggerOptions = {
   definition: {
@@ -20,18 +22,18 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'Uootes is solving is that earning money is challenging and difficult due to the advancement of technology and job scarcity. Uootes aims to make earning easy and accessible.',
     },
-    servers: [ 
-      { 
-        url: `http://localhost:2030`, 
-        description: 'Local server' 
+    servers: [
+      {
+        url: `http://localhost:2030`,
+        description: 'Local server'
       },
       {
-        url: 'https://uootes.onrender.com', 
+        url: 'https://uootes.onrender.com',
         description: 'Production server'
       }
     ],
   },
-  apis: ['./routes/*.js'], 
+  apis: ['./routes/*.js'],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
@@ -45,6 +47,17 @@ app.use('/referral', referralRoutes);
 app.use('/task', taskRoutes);
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+cron.schedule('0 */6 * * *', async () => {
+  try {
+    console.log('⏰ Splitting revenue balance...');
+    await splittingRevenue();
+    console.log('Done splitting revenue balance...');
+    console.log('Next splitting in 6 hours...');
+  } catch (error) {
+    console.error('Error splitting revenue balance:', error.message);
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server is listening to Port: ${PORT}`);
