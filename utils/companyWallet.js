@@ -26,4 +26,22 @@ exports.splittingRevenue = async (req, res) => {
       message: error.message
     });
   }
+};
+
+
+exports.getActivationToken = async (amount) => {
+  const wallet = await companyWallet.findOne();
+
+  if (wallet === null) {
+    console.log("Company's wallet not found")
+  } else {
+    let revenueBal = wallet.revenueBalance;
+    let accumulationBal = wallet.accumulation;
+    revenueBal += amount;
+    accumulationBal += amount;
+    wallet.revenueBalance = revenueBal;
+    wallet.accumulation = accumulationBal;
+    await wallet.save();
+    console.log("Activation token added to revenue successfully")
+  }
 }

@@ -13,7 +13,7 @@ const referralRoutes = require('./routes/referral');
 const taskRoutes = require('./routes/task');
 const companyWalletRouter = require('./routes/companyWallet');
 const cron = require('node-cron');
-const { splittingRevenue } = require('./utils/splitRevenue');
+const { splittingRevenue } = require('./utils/companyWallet');
 
 const swaggerOptions = {
   definition: {
