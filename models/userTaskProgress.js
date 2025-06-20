@@ -1,33 +1,40 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose")
 
 const userTaskProgressSchema = new mongoose.Schema({
-    userId: {
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+  },
+  tasks: [
+    {
+      taskId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        ref: 'Task',
+        required: true
+      },
+      status: {
+        type: String,
         required: true,
-        unique: true,
-    },
-    tasks: [
-        {
-            taskId: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'Task',
-                required: true,
-            },
-            status: {
-                type: String,
-                enum: ['start', 'done'],
-                default: 'start',
-            }
-        }
-    ],
-    isRewardClaimed: {
-        type: Boolean,
-        default: false,
-    },
-    rewardClaimedAt: {
-        type: Date,
+        enum: ['start', 'done'],
+        default: 'start'
+      }
     }
-}, { timestamps: true });
+  ],
+  completedCount: { 
+    type: Number,
+    default: 0
+  },
+  rewardClaimed: { 
+    type: Boolean,
+    default: false,
+  },
+  rewardClaimedAt: { 
+    type: Date,
+  }
+}, { timestamps: true }); 
 
-module.exports = mongoose.model('UserTaskProgress', userTaskProgressSchema);
+const UserTaskProgress = mongoose.model('UserTaskProgress', userTaskProgressSchema);
+
+module.exports = UserTaskProgress;
