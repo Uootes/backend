@@ -20,7 +20,7 @@ exports.createTask = async (req, res) => {
         return res.status(201).json({ message: 'Task created successfully', task: newTask });
     } catch (err) {
         return res.status(500).json({ message: 'Server error', error: err.message });
-    }
+    };
 };
 
 exports.getAllTasks = async (req, res) => {

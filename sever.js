@@ -14,6 +14,7 @@ const taskRoutes = require('./routes/task');
 const companyWalletRouter = require('./routes/companyWallet');
 const cron = require('node-cron');
 const { splittingRevenue } = require('./utils/companyWallet');
+const userTaskProgressRoute = require('./routes/user.taskProgress')
 
 const swaggerOptions = {
   definition: {
@@ -41,12 +42,14 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 app.use(express.json());
 app.use(morgan('combined'));
+const baseUrl = 'api/v1';
 
-app.use('/api/v1', userRouter);
-app.use('/api/v1', exchangerRouter);
-app.use('/referral', referralRoutes);
-app.use('/task', taskRoutes);
-app.use('/api/v1', companyWalletRouter)
+app.use(baseUrl, userRouter);
+app.use(baseUrl, exchangerRouter);
+app.use(`${baseUrl}/referrals`, referralRoutes);
+app.use(`${baseUrl}/tasks`, taskRoutes);
+app.use(baseUrl, companyWalletRouter);
+app.use(`${baseUrl}/taskprogresses`, userTaskProgressRoute)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
