@@ -9,6 +9,7 @@ const userWallet = require('../models/userWallet');
 const { getActivationToken } = require('../utils/companyWallet');
 const cloudinary = require('../config/cloudinary');
 const fs = require('fs')
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
