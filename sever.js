@@ -2,6 +2,8 @@ require('dotenv').config();
 // console.log('CI ENV: MONGO_URI is', process.env.MONGODB_URL); 
 require('./config/database');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const PORT = process.env.PORT;
 const app = express();
 const morgan = require('morgan');
@@ -42,7 +44,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 app.use(express.json());
 app.use(morgan('combined'));
-const baseUrl = 'api/v1';
+const baseUrl = '/api/v1';
 
 app.use(baseUrl, userRouter);
 app.use(baseUrl, exchangerRouter);
@@ -52,6 +54,12 @@ app.use(baseUrl, companyWalletRouter);
 app.use(`${baseUrl}/taskprogresses`, userTaskProgressRoute)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Ensure uploads directory exists
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 cron.schedule('0 */6 * * *', async () => {
   try {

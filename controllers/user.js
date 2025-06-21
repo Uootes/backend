@@ -7,13 +7,23 @@ const { initReferral, promoteVisitorToReferral } = require('./referral');
 const { createWallet } = require('./userWallet');
 const userWallet = require('../models/userWallet');
 const { getActivationToken } = require('../utils/companyWallet');
-
+const cloudinary = require('../config/cloudinary');
+const fs = require('fs')
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
 const register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword, country, referralCode } = req.body;
+
+    let result;
+    try {
+      result = await cloudinary.uploader.upload(req.file.path);
+      fs.unlinkSync(req.file.path);
+    } catch (uploadError) {
+      console.error('Cloudinary upload error:', uploadError);
+      return res.status(500).json({ message: 'Failed to upload profile picture' });
+    }
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password || !confirmPassword || !country) {
@@ -25,8 +35,12 @@ const register = async (req, res) => {
     }
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) return res.status(400).json({ message: 'Email already in use' });
-
+    if (existingUser) {
+      await cloudinary.uploader.destroy(result.public_id)
+      return res.status(400).json({
+        message: `User with email: ${email} already exists`
+      })
+    }
     // Check referral code validity before creating user
     let referrerUser = null;
     if (referralCode) {
@@ -49,6 +63,10 @@ const register = async (req, res) => {
       email: email.toLowerCase(),
       passwordHash,
       country,
+      profilePicture:{
+        imageUrl: result.secure_url,
+        publicId: result.public_id
+      },
       referralCode: userReferralCode,
       referredBy: referrerUser ? referrerUser._id : null,
     });
@@ -64,13 +82,7 @@ const register = async (req, res) => {
     res.status(201).json({
       message: 'User registered successfully',
       token,
-      user: {
-        id: newUser._id,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
-        email: newUser.email,
-        userReferralCode
-      }
+      data: newUser
     });
   } catch (error) {
     console.error(error);

@@ -1,5 +1,7 @@
 const { register, login, activate , forgotPassword, resetPassword} = require('../controllers/user');
 const { auth } = require('../middleware/auth');
+const multer = require('multer');
+const upload = require('../utils/multer');
 
 const router = require('express').Router()
 
@@ -19,7 +21,7 @@ const router = require('express').Router()
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -60,6 +62,11 @@ const router = require('express').Router()
  *                 maxLength: 10
  *                 description: Optional valid referral code
  *                 example: "GSCSO9Q50"
+ *               profilePicture:
+ *                 type: string
+ *                 format: binary
+ *                 description: URL of the user's profile picture
+ *                 example: "https://example.com/images/profile.jpg"
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -127,7 +134,7 @@ const router = require('express').Router()
  *                   type: string
  *                   example: Failed to register user
  */
-router.post('/signUp', register);
+router.post('/signUp', upload.single('profilePicture'), register);
 
 /**
  * @swagger
