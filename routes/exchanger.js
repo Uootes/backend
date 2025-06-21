@@ -1,5 +1,7 @@
 const { register, login, activate , forgotPassword, resetPassword} = require('../controllers/exchanger');
 const { auth } = require('../middleware/auth');
+const multer = require('multer');
+const upload = require('../utils/multer');
 
 const router = require('express').Router();
 
@@ -19,7 +21,7 @@ const router = require('express').Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -48,6 +50,11 @@ const router = require('express').Router();
  *               confirmPassword:
  *                 type: string
  *                 example: password123
+ *               profilePicture:
+ *                 type: string
+ *                 format: binary
+ *                 description: URL of the exchanger's profile picture
+ *                 example: "https://example.com/images/exchanger-profile.jpg"
  *     responses:
  *       201:
  *         description: Exchanger registered successfully
@@ -64,7 +71,7 @@ const router = require('express').Router();
  *                   type: string
  *                   example: "Error registering exchanger: <error-message>"
  */
-router.post('/signUp-exchanger', register);
+router.post('/signUp-exchanger', upload.single('profilePicture'), register);
 
 /**
  * @swagger

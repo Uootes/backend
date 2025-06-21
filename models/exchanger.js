@@ -9,6 +9,10 @@ const exchangerSchema = new mongoose.Schema({
     pinHash: { type: String, required: true },
     kycStatus: { type: String, enum: ['pending', 'verified'], default: 'pending' },
     accountType: { type: String, enum: ['regular', 'admin'], default: 'regular' },
+    profilePicture: {
+      imageUrl: { type: String },
+      publicId: { type: String }
+    },
     activationStatus: { type: Boolean, default: false },
     balance: { type: Number, default: 0 },
     otp: { 

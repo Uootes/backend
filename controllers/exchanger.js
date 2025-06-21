@@ -2,17 +2,24 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const Exchanger = require('../models/exchanger');
 const { sendEmail } = require('../utils/nodemailer');
-
 const exchangerWallet = require('../models/userWallet');
 const { createWallet } = require('./exhangerWallet');
-
+const cloudinary = require('../config/cloudinary');
+const fs = require('fs')
 const JWT_SECRET = process.env.JWT_SECRET;
 
 // Signup
 const register = async (req, res) => {
    try {
     const { firstName, lastName, country, email, password, confirmPassword } = req.body;
-
+    let result;
+    try {
+      result = await cloudinary.uploader.upload(req.file.path);
+      fs.unlinkSync(req.file.path);
+    } catch (uploadError) {
+      console.error('Cloudinary upload error:', uploadError);
+      return res.status(500).json({ message: 'Failed to upload profile picture' });
+    }
     // Validate required fields
     if (!firstName || !lastName || !country || !email || !password || !confirmPassword) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -23,8 +30,12 @@ const register = async (req, res) => {
     }
 
     const existingExchanger = await Exchanger.findOne({ email: email.toLowerCase() });
-    if (existingExchanger) return res.status(400).json({ message: 'Email already in use' });
-
+    if (existingExchanger) { 
+      await cloudinary.uploader.destroy(result.public_id)
+      return res.status(400).json({
+        message: `User with email: ${email} already exists`
+      })
+    }
     const pinHash = await bcrypt.hash(password, 10);
 
     const newExchanger = new Exchanger({
@@ -35,52 +46,26 @@ const register = async (req, res) => {
         pinHash,
         kycStatus: 'pending',
         accountType: 'regular',
-        activationStatus: false
+        activationStatus: false,
+        profilePicture: {
+          imageUrl: result.secure_url,
+          publicId: result.public_id
+        }
     });
 
     await createWallet(newExchanger._id);
     await newExchanger.save();
 
-    // Send welcome email
-    await sendWelcomeEmail(newExchanger.email, newExchanger.firstName);
-
     const token = jwt.sign({ id: newExchanger._id }, JWT_SECRET);
     res.status(201).json({ 
       message: 'Exchanger registered successfully', 
       token,
-      user: {
-        id: newExchanger._id,
-        firstName: newExchanger.firstName,
-        lastName: newExchanger.lastName,
-        email: newExchanger.email
-      }
+      data: newExchanger
     });  
    } catch (error) {
     console.log(error.message);
     res.status(500).json({ message: 'Failed to register exchanger: ' + error.message });
    }
-};
-
-// Helper function for welcome email
-const sendWelcomeEmail = async (email, firstName) => {
-  await sendEmail({
-    email: email,
-    subject: 'Welcome to Our Exchange Platform',
-    html: `
-      <!DOCTYPE html>
-      <html>
-        <body style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px;">
-          <div style="max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 8px;">
-            <h2 style="color: #9B3EFF;">Welcome to Our Exchange Platform</h2>
-            <p>Hi ${firstName},</p>
-            <p>Thank you for registering with us! Your account has been successfully created.</p>
-            <p>You can now log in to your account and start exchanging.</p>
-            <p style="margin-top: 30px;">– The Team</p>
-          </div>
-        </body>
-      </html>
-    `
-  });
 };
 
 // Login remains the same as before
