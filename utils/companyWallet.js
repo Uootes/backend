@@ -4,7 +4,6 @@ const companyWallet = require('../models/companyWallet');
 exports.splittingRevenue = async (req, res) => {
   try {
     const wallet = await companyWallet.findOne();
-
     if (wallet === null) {
       console.log("Company's wallet not found")
     } else {
@@ -31,7 +30,6 @@ exports.splittingRevenue = async (req, res) => {
 
 exports.getActivationToken = async (amount) => {
   const wallet = await companyWallet.findOne();
-
   if (wallet === null) {
     console.log("Company's wallet not found")
   } else {
