@@ -17,13 +17,15 @@ const register = async (req, res) => {
   try {
     const { firstName, lastName, email, password, confirmPassword, country, referralCode } = req.body;
 
-    let result;
-    try {
-      result = await cloudinary.uploader.upload(req.file.path);
-      fs.unlinkSync(req.file.path);
-    } catch (uploadError) {
-      console.error('Cloudinary upload error:', uploadError);
-      return res.status(500).json({ message: 'Failed to upload profile picture' });
+    let result = null;
+    if (req.file) {
+      try {
+        result = await cloudinary.uploader.upload(req.file.path);
+        fs.unlinkSync(req.file.path);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        return res.status(500).json({ message: 'Failed to upload profile picture' });
+      }
     }
 
     // Validate required fields
@@ -37,7 +39,9 @@ const register = async (req, res) => {
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      await cloudinary.uploader.destroy(result.public_id)
+      if (result) {
+        await cloudinary.uploader.destroy(result.public_id)
+      }
       return res.status(400).json({
         message: `User with email: ${email} already exists`
       })
@@ -64,10 +68,10 @@ const register = async (req, res) => {
       email: email.toLowerCase(),
       passwordHash,
       country,
-      profilePicture:{
+      profilePicture: result ? {
         imageUrl: result.secure_url,
         publicId: result.public_id
-      },
+      } : null,
       referralCode: userReferralCode,
       referredBy: referrerUser ? referrerUser._id : null,
     });

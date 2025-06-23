@@ -12,14 +12,18 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const register = async (req, res) => {
    try {
     const { firstName, lastName, country, email, password, confirmPassword } = req.body;
-    let result;
-    try {
-      result = await cloudinary.uploader.upload(req.file.path);
-      fs.unlinkSync(req.file.path);
-    } catch (uploadError) {
-      console.error('Cloudinary upload error:', uploadError);
-      return res.status(500).json({ message: 'Failed to upload profile picture' });
+
+    let result = null;
+    if (req.file) {
+      try {
+        result = await cloudinary.uploader.upload(req.file.path);
+        fs.unlinkSync(req.file.path);
+      } catch (uploadError) {
+        console.error('Cloudinary upload error:', uploadError);
+        return res.status(500).json({ message: 'Failed to upload profile picture' });
+      }
     }
+
     // Validate required fields
     if (!firstName || !lastName || !country || !email || !password || !confirmPassword) {
       return res.status(400).json({ message: 'All fields are required' });
@@ -31,7 +35,9 @@ const register = async (req, res) => {
 
     const existingExchanger = await Exchanger.findOne({ email: email.toLowerCase() });
     if (existingExchanger) { 
-      await cloudinary.uploader.destroy(result.public_id)
+      if (result) {
+        await cloudinary.uploader.destroy(result.public_id)
+      }
       return res.status(400).json({
         message: `User with email: ${email} already exists`
       })
@@ -47,10 +53,10 @@ const register = async (req, res) => {
         kycStatus: 'pending',
         accountType: 'regular',
         activationStatus: false,
-        profilePicture: {
+        profilePicture: result ? {
           imageUrl: result.secure_url,
           publicId: result.public_id
-        }
+        } : null
     });
 
     await createWallet(newExchanger._id);
