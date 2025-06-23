@@ -19,6 +19,7 @@ const exchangerSchema = new mongoose.Schema({
       code: String, 
       expiresAt: Date 
     },
+    emailVerified:{ type:Boolean, default: false},
     passwordResetOtp: { type: String },
     passwordResetOtpExpires: { type: Date },
 }, { timestamps: true });

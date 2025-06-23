@@ -17,6 +17,7 @@ const userSchema = new mongoose.Schema({
   accountType: { type: String, enum: ['Bronze', 'Silver', 'Gold'], default: 'Bronze' },
   passwordResetOtp: String,
   passwordResetOtpExpires: Date,
+  emailVerified:{ type:Boolean, default: false},
   createdAt: { type: Date, default: Date.now }
 });
 

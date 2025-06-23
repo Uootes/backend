@@ -1,9 +1,9 @@
-const { register, login, activate , forgotPassword, resetPassword} = require('../controllers/user');
+const { register, login, activate, forgotPassword, resetPassword, verifyOtp } = require('../controllers/user');
 const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = require('../utils/multer');
 
-const router = require('express').Router()
+const router = require('express').Router();
 
 /**
  * @swagger
@@ -69,7 +69,7 @@ const router = require('express').Router()
  *                 example: "https://example.com/images/profile.jpg"
  *     responses:
  *       201:
- *         description: User registered successfully
+ *         description: User registered successfully,Otp sent to Mail
  *         content:
  *           application/json:
  *             schema:
@@ -125,16 +125,36 @@ const router = require('express').Router()
  *                       example: Invalid referral code
  *       500:
  *         description: Internal server error
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Failed to register user
  */
 router.post('/signUp', upload.single('profilePicture'), register);
+
+/**
+ * @swagger
+ * /api/v1/verifyOtp:
+ *   post:
+ *     summary: Verify OTP for user email verification
+ *     tags: [User Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otp
+ *             properties:
+ *               otp:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ *       500:
+ *         description: Internal Server Error
+ */
+router.post('/verifyOtp', verifyOtp);
 
 /**
  * @swagger
