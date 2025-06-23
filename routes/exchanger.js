@@ -1,4 +1,4 @@
-const { register, login, activate , forgotPassword, resetPassword} = require('../controllers/exchanger');
+const { register, login, forgotPassword, resetPassword, verifyOtp } = require('../controllers/exchanger');
 const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = require('../utils/multer');
@@ -72,6 +72,34 @@ const router = require('express').Router();
  *                   example: "Error registering exchanger: <error-message>"
  */
 router.post('/signUp-exchanger', upload.single('profilePicture'), register);
+
+/**
+ * @swagger
+ * /api/v1/verifyOtp-exchanger:
+ *   post:
+ *     summary: Verify OTP for exchanger email verification
+ *     tags: [Exchanger]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - otp
+ *             properties:
+ *               otp:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid or expired OTP
+ *       500:
+ *         description: Internal Server Error
+ */
+router.post('/verifyOtp-exchanger', verifyOtp);
 
 /**
  * @swagger
@@ -192,5 +220,7 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *                   example: "Error resetting password: <error-message>"
  */
 router.post('/resetPassword-exchanger', resetPassword);
+
+module.exports = router;
 
 module.exports = router;
