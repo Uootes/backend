@@ -70,7 +70,7 @@ exports.accessUserTaskProgress = async (req, res) => {
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const {id: userId} = req.user
+    const  userId = req.user.id
 
     const userProgress = await userTaskProgress.findOne({ userId });
     if (!userProgress) {
