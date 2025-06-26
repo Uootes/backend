@@ -227,7 +227,7 @@ const upgradeAccount = async (req, res, next) => {
 
 const getReferralInfo = async (req, res, next) => {
     try {
-        const { userId } = req.user;
+        const userId = req.user.id;
 
         const referralDoc = await Referral.findOne({ userId });
 
@@ -392,15 +392,15 @@ exports.findReferralDoc = async function (userId) {
 
 }
 
-const getReferralAndVisitorsCount = async (req, res) => {
+const getReferralAndVisitorsCount = async (req, res, next) => {
     try {
-        const { id: userId } = req.user;
-        const user = await Referral.findById(userId);
+        const userId = req.user.id;
+       const user = await Referral.findOne({ userId });
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        const referralCount = user.referrals.length();
-        const visitorCount = user.visitors.length();
+        const referralCount = user.referrals.length;
+        const visitorCount = user.visitors.length;
 
         res.status(200).json({
             message: "User referral and visitors count retrieved successfully",

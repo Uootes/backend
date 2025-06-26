@@ -323,7 +323,7 @@ const activate = async (req, res) => {
 
     if (wallet.GSCBalance >= 2.15) {
       wallet.GSCBalance -= 2.15;
-      user.activationStatus = true;
+      user.activationStatus = "active";
       await getActivationToken(2.15);
       await promoteVisitorToReferral(user._id);
       await wallet.save();
