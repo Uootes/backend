@@ -45,8 +45,8 @@ const register = async (req, res) => {
       return res.status(400).json({
         message: `User with email: ${email} already exists`
       })
-    }
-    // Check referral code validity before creating user
+    };
+    
     let referrerUser = null;
     if (referralCode) {
       referrerUser = await User.findOne({ referralCode });
@@ -82,7 +82,7 @@ const register = async (req, res) => {
     // Save OTP and expiration (10 minutes)
     newUser.passwordResetOtp = otp;
     newUser.passwordResetOtpExpires = Date.now() + 10 * 60 * 1000;
-   
+
     await newUser.save();
     await sendEmail({
       email: newUser.email,
@@ -95,7 +95,7 @@ const register = async (req, res) => {
               <h2 style="text-align: center; color: white;">Verify Your Email</h2>
               <p>Hi ${newUser.firstName},</p>
               <p>Use the OTP code below to verify your account:</p>
-    
+
               <div style="display: flex; justify-content: space-between; margin: 30px 0; gap: 10px;">
                 ${otp.split('').map(char => `
                   <div style="flex: 1; text-align: center; font-size: 28px; font-weight: bold; padding: 15px 0; border-radius: 8px; background: #10254A; border: 1px solid #3C5A99;">
@@ -103,7 +103,7 @@ const register = async (req, res) => {
                   </div>
                 `).join('')}
               </div>
-    
+
               <p>This code will expire in <strong>10 minutes</strong>.</p>
               <p>If you didn’t request this, you can ignore this email.</p>
               <p style="margin-top: 30px;">The Uootes Team</p>
@@ -116,8 +116,10 @@ const register = async (req, res) => {
 
     const token = jwt.sign({ id: newUser._id }, JWT_SECRET);
 
-    // Initialize referral relationship
-    await initReferral(newUser._id, referrerUser?._id || null);
+    const newUserName = `${newUser.firstName} ${newUser.lastName}`;
+    await initReferral(newUser._id, referrerUser?._id || null, newUserName);
+
+    // Send email to referrer (unchanged, as it's just a notification)
     if (referrerUser) {
       await sendEmail({
         email: referrerUser.email,
@@ -131,7 +133,7 @@ const register = async (req, res) => {
                 <p>Hi ${referrerUser.firstName},</p>
                 <p><strong>${newUser.firstName} ${newUser.lastName}</strong> just signed up using your referral code <strong>${referrerUser.referralCode}</strong>.</p>
                 <p>Thanks for spreading the word! Keep referring to earn more rewards 🎁.</p>
-      
+
                 <p>Cheers,</p>
                 <p>The Uootes Team</p>
               </div>
@@ -139,11 +141,10 @@ const register = async (req, res) => {
           </html>
         `
       });
-      
     }
-    
+
     res.status(201).json({
-      message: 'User registered successfully, OTP sent to email',   
+      message: 'User registered successfully, OTP sent to email',
       token,
       data: newUser
     });
@@ -151,7 +152,7 @@ const register = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: 'Failed to register user: ' + error.message });
   }
-}
+};
 
 const verifyOtp = async (req, res) => {
   try {

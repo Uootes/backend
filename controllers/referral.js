@@ -1,27 +1,77 @@
 const Referral = require("../models/referral");
 const User = require("../models/user");
 
-const initReferral = async (newUserId, referredById) => {
-    const existingReferral = await Referral.findOne({ userId: newUserId });
-    if (existingReferral) {
-        throw new Error("User already has a referral document");
-    }
+// const initReferral = async (newUserId, referredById) => {
+//     const existingReferral = await Referral.findOne({ userId: newUserId });
+//     if (existingReferral) {
+//         throw new Error("User already has a referral document");
+//     }
 
-    const newReferral = new Referral({
-        userId: newUserId,
-        referredBy: referredById,
-        visitors: [],
-        referrals: [],
-        upgradeTokens: 0,
-    });
+//     const newReferral = new Referral({
+//         userId: newUserId,
+//         referredBy: referredById,
+//         visitors: [],
+//         referrals: [],
+//         upgradeTokens: 0,
+//     });
 
-    await newReferral.save();
+//     await newReferral.save();
 
-    const referrer = await Referral.findOne({ userId: referredById });
-    if (referrer) {
-        referrer.visitors.push(newReferral._id);
-        await referrer.save();
-    }
+//     const referrer = await Referral.findOne({ userId: referredById });
+//     if (referrer) {
+//         referrer.visitors.push(newReferral._id);
+//         await referrer.save();
+//     }
+// };
+
+// Assuming User model and Referral model are imported
+// const User = require('./models/User');
+// const Referral = require('./models/Referral');
+
+const initReferral = async (newUserId, referredById, newUserName) => { 
+
+  const existingReferral = await Referral.findOne({ userId: newUserId });
+  if (existingReferral) {
+   
+    console.warn(`Referral document already exists for user ID: ${newUserId}. Skipping creation.`);
+    return
+  };
+
+  const newReferral = new Referral({
+    userId: newUserId,
+    referredBy: referredById, 
+    visitors: [],
+    referrals: [],
+    upgradeTokens: 0,
+  });
+
+  await newReferral.save();
+
+  if (referredById) {
+    const referrerReferralDoc = await Referral.findOne({ userId: referredById });
+
+    if (referrerReferralDoc) {
+      const visitorExists = referrerReferralDoc.visitors.some(
+        (visitor) => visitor.userId.equals(newUserId)
+      );
+
+      if (!visitorExists) {
+        referrerReferralDoc.visitors.push({
+          userId: newUserId,
+          fullName: newUserName, 
+          joinedAt: new Date(), 
+        });
+
+        await referrerReferralDoc.save();
+        console.log(`User ${newUserName} (${newUserId}) added to referrer ${referredById}'s visitors.`);
+      } else {
+        console.log(`User ${newUserName} (${newUserId}) is already in referrer ${referredById}'s visitors array.`);
+      };
+
+    } else {
+      console.warn(`Referrer Referral document not found for user ID: ${referredById}. Cannot add visitor.`);
+    };
+  };
 };
 
 const promoteVisitorToReferral = async (userId) => {
@@ -210,6 +260,104 @@ const getReferrerDashboardData = async (req, res, next) => {
     }
 };
 
+
+
+// exports.getReferrerDashboardData = async (req, res, next) => {
+//     try {
+//         // 1. Get the authenticated referrer's MongoDB _id
+//         const referrerId = req.user.id; // Assumes authMiddleware has populated req.user.id
+
+//         // 2. Find the referrer's Referral document
+//         // We populate the 'referrals' array to get the actual User objects of their direct upgraded referrals.
+//         // We select specific fields from the User model for display.
+//         const referrerReferralDoc = await Referral.findOne({ userId: referrerId })
+//             .populate({
+//                 path: 'referrals', // This refers to the 'referrals' array in the Referral schema
+//                 model: 'User',      // The model to populate from is 'User'
+//                 select: 'firstName lastName referralCode accountType' // Fields to retrieve from the User document
+//             })
+//             // Optionally populate referredBy to verify it works, though not strictly needed for this display
+//             // .populate('referredBy');
+//             .exec();
+
+//         // If the referrer's Referral document doesn't exist (e.g., new user not yet initialized referral system)
+//         if (!referrerReferralDoc) {
+//             // A referrer's Referral doc should always exist if they are active in the system,
+//             // but this check handles edge cases.
+//             return res.status(404).json({ message: "Referral data not found for this user." });
+//         }
+
+//         // Initialize an array to hold the structured data for the dashboard
+//         const dashboardReferralsData = [];
+
+//         // 3. Loop through each direct upgraded referral
+//         // Each 'directReferralUser' here is a populated User document object
+//         for (const directReferralUser of referrerReferralDoc.referrals) {
+//             // 4. For each direct referral, find their own Referral document
+//             // This is necessary to get their 'visitors' and 'referrals' counts.
+//             const directReferralReferralDoc = await Referral.findOne({ userId: directReferralUser._id });
+
+//             let visitorsCount = 0;
+//             let referralsCount = 0;
+
+//             if (directReferralReferralDoc) {
+//                 // Get the length of their visitors and referrals arrays
+//                 visitorsCount = directReferralReferralDoc.visitors.length;
+//                 referralsCount = directReferralReferralDoc.referrals.length;
+//             }
+//             // If directReferralReferralDoc is not found, counts remain 0, which is appropriate.
+
+//             // 5. Structure the data for this direct referral and add it to the array
+//             dashboardReferralsData.push({
+//                 id: directReferralUser._id, // MongoDB ObjectId of the referred user
+//                 firstName: directReferralUser.firstName,
+//                 lastName: directReferralUser.lastName,
+//                 referralCode: directReferralUser.referralCode, // Their unique user ID
+//                 accountType: directReferralUser.accountType, // Their account status
+//                 visitorsCount: visitorsCount, // Count of visitors THEY have
+//                 referralsCount: referralsCount // Count of upgraded referrals THEY have
+//             });
+//         }
+
+//         // Send the structured data as a success response
+//         return res.status(200).json({
+//             message: 'Referral dashboard data retrieved successfully.',
+//             data: dashboardReferralsData,
+//             totalDirectReferrals: dashboardReferralsData.length // Useful for frontend
+//         });
+
+//     } catch (error) {
+//         console.error('Error fetching referrer dashboard data:', error);
+//         next(error); // Pass the error to the Express error handling middleware
+//     }
+// };
+
+
+exports.findUser = async function (userId){
+    try {
+        const user = await User.findById(userId);
+        if (!user) {
+            throw new Error("User not found");
+        }
+        return user;
+    }
+    catch (error) {
+        throw new Error("Error finding user: " + error.message);
+    }
+};
+
+exports.findReferralDoc = async function (userId) {
+    try {
+        const referral = await Referral.findOne({ userId });
+        if (!referral) {
+            throw new Error("Referral document not found for this user");
+        }
+        return referral;
+    } catch (error) {
+        throw new Error("Error finding referral document: " + error.message);
+    }
+
+}
 
 const getReferralAndVisitorsCount = async (req, res) => {
     try {
