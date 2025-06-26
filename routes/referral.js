@@ -7,6 +7,8 @@ router.post('/upgrade', referralController.upgradeAccount);
 
 router.get('/:userId', referralController.getReferralInfo);
 
-router.get("/cout", auth, referralController.getReferralAndVisitorsCount)
+router.get("/count", auth, referralController.getReferralAndVisitorsCount)
+
+router.get('/dashboarddata', auth, referralController.getReferrerDashboardData);
 
 module.exports = router;
