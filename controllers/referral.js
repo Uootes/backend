@@ -48,54 +48,6 @@ const initReferral = async (newUserId, referredById, newUserName) => {
   };
 };
 
-// const promoteVisitorToReferral = async (userId) => {
-//     try {
-//         // find the person thy referred
-//         const userReferral = await Referral.findOne({ userId });
-
-//         if (!userReferral || !userReferral.referredBy) {
-//             console.log("No referral or referrer found for this user.");
-//             return;
-//         }
-
-//         // Find the referrer
-//         const referrer = await Referral.findOne({
-//             userId: userReferral.referredBy,
-//         });
-
-//         if (!referrer) {
-//             console.log("Referrer not found in Referral collection.");
-//             return;
-//         };
-
-//         const visitorExists = referrer.visitors.some(
-//             (visitor) => visitor.userId.toString() === userId.toString()
-//         );
-
-//         if (visitorExists) {
-//             // Remove from VISITORS ARRAY
-//             referrer.visitors = referrer.visitors.filter(
-//                 (visitor) => visitor.userId.toString() !== userId.toString()
-//             );
-//         }
-
-//         const existingInReferral = referrer.referrals.some(
-//             (referredUser) => referredUser.userId.toString() === userId.toString()
-//         );
-
-//         if (!existingInReferral) {
-//             referrer.referrals.push({ userId });
-//             referrer.upgradeTokens += 1;
-//         }
-
-//         await referrer.save();
-
-//         console.log("User promoted to referral successfully.");
-//     } catch (error) {
-//         console.error("Error promoting visitor to referral:", error);
-//     }
-// };
-
 const promoteVisitorToReferral = async (userId) => {
   try {
     const activatedUser = await User.findById(userId);
