@@ -13,14 +13,28 @@ const referralSchema = new mongoose.Schema({
   },
   visitors: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      fullName: {
+        type: String,
+        required: true,
+      },
     },
   ],
   referrals: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+      },
+      fullName: {
+        type: String,
+        required: true,
+      },
     },
   ],
   upgradeTokens: {
