@@ -7,6 +7,10 @@ const referralSchema = new mongoose.Schema({
     required: true,
     unique: true, // one referral record per user
   },
+  userFullName: {
+    type: String, 
+    required: true,
+  },
   referredBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

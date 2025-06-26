@@ -1,33 +1,6 @@
 const Referral = require("../models/referral");
 const User = require("../models/user");
 
-// const initReferral = async (newUserId, referredById) => {
-//     const existingReferral = await Referral.findOne({ userId: newUserId });
-//     if (existingReferral) {
-//         throw new Error("User already has a referral document");
-//     }
-
-//     const newReferral = new Referral({
-//         userId: newUserId,
-//         referredBy: referredById,
-//         visitors: [],
-//         referrals: [],
-//         upgradeTokens: 0,
-//     });
-
-//     await newReferral.save();
-
-//     const referrer = await Referral.findOne({ userId: referredById });
-//     if (referrer) {
-//         referrer.visitors.push(newReferral._id);
-//         await referrer.save();
-//     }
-// };
-
-// Assuming User model and Referral model are imported
-// const User = require('./models/User');
-// const Referral = require('./models/Referral');
-
 const initReferral = async (newUserId, referredById, newUserName) => { 
 
   const existingReferral = await Referral.findOne({ userId: newUserId });
@@ -39,6 +12,7 @@ const initReferral = async (newUserId, referredById, newUserName) => {
 
   const newReferral = new Referral({
     userId: newUserId,
+    userFullName: newUserName,
     referredBy: referredById, 
     visitors: [],
     referrals: [],
@@ -74,52 +48,111 @@ const initReferral = async (newUserId, referredById, newUserName) => {
   };
 };
 
+// const promoteVisitorToReferral = async (userId) => {
+//     try {
+//         // find the person thy referred
+//         const userReferral = await Referral.findOne({ userId });
+
+//         if (!userReferral || !userReferral.referredBy) {
+//             console.log("No referral or referrer found for this user.");
+//             return;
+//         }
+
+//         // Find the referrer
+//         const referrer = await Referral.findOne({
+//             userId: userReferral.referredBy,
+//         });
+
+//         if (!referrer) {
+//             console.log("Referrer not found in Referral collection.");
+//             return;
+//         };
+
+//         const visitorExists = referrer.visitors.some(
+//             (visitor) => visitor.userId.toString() === userId.toString()
+//         );
+
+//         if (visitorExists) {
+//             // Remove from VISITORS ARRAY
+//             referrer.visitors = referrer.visitors.filter(
+//                 (visitor) => visitor.userId.toString() !== userId.toString()
+//             );
+//         }
+
+//         const existingInReferral = referrer.referrals.some(
+//             (referredUser) => referredUser.userId.toString() === userId.toString()
+//         );
+
+//         if (!existingInReferral) {
+//             referrer.referrals.push({ userId });
+//             referrer.upgradeTokens += 1;
+//         }
+
+//         await referrer.save();
+
+//         console.log("User promoted to referral successfully.");
+//     } catch (error) {
+//         console.error("Error promoting visitor to referral:", error);
+//     }
+// };
+
 const promoteVisitorToReferral = async (userId) => {
-    try {
-        // find the person thy referred
-        const userReferral = await Referral.findOne({ userId });
+  try {
+    const activatedUser = await User.findById(userId);
+    if (!activatedUser) {
+      console.warn(`User with ID ${userId} not found during referral promotion.`);
+      return;
+    };
 
-        if (!userReferral || !userReferral.referredBy) {
-            console.log("No referral or referrer found for this user.");
-            return;
-        }
+    const activatedUserFullName = `${activatedUser.firstName} ${activatedUser.lastName}`;
 
-        // Find the referrer
-        const referrer = await Referral.findOne({
-            userId: userReferral.referredBy,
-        });
+    const userReferralDoc = await Referral.findOne({ userId });
 
-        if (!referrer) {
-            console.log("Referrer not found in Referral collection.");
-            return;
-        }
+    if (!userReferralDoc || !userReferralDoc.referredBy) {
+      console.log(`No referral document or referrer found for user: ${userId}. Skipping referral promotion.`);
+      return; 
+    };
 
-        const visitorExists = referrer.visitors.some(
-            (visitor) => visitor.userId.toString() === userId.toString()
-        );
+    // Find the referrer's referral document
+    const referrerReferralDoc = await Referral.findOne({
+      userId: userReferralDoc.referredBy,
+    });
 
-        if (visitorExists) {
-            // Remove from VISITORS ARRAY
-            referrer.visitors = referrer.visitors.filter(
-                (visitor) => visitor.userId.toString() !== userId.toString()
-            );
-        }
+    if (!referrerReferralDoc) {
+      console.warn(`Referrer's Referral document not found for user ID: ${userReferralDoc.referredBy}. Cannot promote visitor.`);
+      return;
+    };
 
-        const existingInReferral = referrer.referrals.some(
-            (referredUser) => referredUser.userId.toString() === userId.toString()
-        );
+    // const initialVisitorsCount = referrerReferralDoc.visitors.length;
+    referrerReferralDoc.visitors = referrerReferralDoc.visitors.filter(
+      (visitor) => !visitor.userId.equals(userId)
+    );
 
-        if (!existingInReferral) {
-            referrer.referrals.push({ userId });
-            referrer.upgradeTokens += 1;
-        }
+    // Add the activated user to the referrer's referrals array, if not already there
+    const existingInReferrals = referrerReferralDoc.referrals.some(
+      (referredUser) => referredUser.userId.equals(userId)
+    );
 
-        await referrer.save();
+    if (!existingInReferrals) {
+      referrerReferralDoc.referrals.push({
+        userId: activatedUser._id,
+        fullName: activatedUserFullName,
+        activatedAt: new Date(),
+      });
 
-        console.log("User promoted to referral successfully.");
-    } catch (error) {
-        console.error("Error promoting visitor to referral:", error);
-    }
+      referrerReferralDoc.upgradeTokens += 1; 
+      console.log(`User ${activatedUserFullName} (${userId}) successfully promoted to referral for referrer ${userReferralDoc.referredBy}. Upgrade token added.`);
+
+    } else {
+      console.log(`User ${activatedUserFullName} (${userId}) is already in referrer ${userReferralDoc.referredBy}'s referrals array. No action needed.`);
+    };
+
+    await referrerReferralDoc.save();
+
+  } catch (error) {
+    console.error("Error promoting visitor to referral:", error);
+    throw new Error("Failed to promote visitor to referral: " + error.message);
+  }
 };
 
 const upgradeAccount = async (req, res, next) => {
