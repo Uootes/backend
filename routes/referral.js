@@ -3,7 +3,7 @@ const router = express.Router();
 const referralController = require('../controllers/referral');
 const { auth } = require('../middleware/auth');
 
-router.post('/upgrade', referralController.upgradeAccount);
+router.patch('/',auth, referralController.upgradeAccount);
 
 router.get('/', auth,referralController.getReferralInfo);
 
