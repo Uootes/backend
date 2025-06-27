@@ -407,5 +407,5 @@ router.post('/resetPassword', resetPassword)
  *       bearerFormat: JWT
  */ router.post('/activate', auth, activate)
 
-
+router.patch("/activate",auth, activate)
 module.exports = router;

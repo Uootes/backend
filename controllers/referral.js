@@ -96,7 +96,7 @@ const promoteVisitorToReferral = async (userId) => {
       console.log(`User ${activatedUserFullName} (${userId}) successfully promoted to referral for referrer ${userReferralDoc.referredBy}. Upgrade token added.`);
 
     } else {
-      console.log(`User ${activatedUserFullName} (${userId}) is already in referrer ${userReferralDoc.referredBy}'s referrals array. No action needed.`);
+      console.log(`User ${activatedUserFullName} (${userId}) is already in referrer ${userReferralDoc.referredBy}'s referrals list. No action needed.`);
     };
 
     await referrerReferralDoc.save();
@@ -107,16 +107,16 @@ const promoteVisitorToReferral = async (userId) => {
   }
 };
 
-const upgradeAccount = async (req, res, next) => {
+const upgradeAccount = async (req, res) => {
   try {
-    const  id = req.user.id;
+    const id = req.user.id;
 
-    const referralDoc = await Referral.findOne({ _id: id });
+    const referralDoc = await Referral.findOne({ userId: id });
     const user = await User.findById(id);
     if (!user || !referralDoc) {
-      return res
-        .status(404)
-        .json({ message: "User or Referral document not found." });
+      return res.status(404).json({
+        message: "User or Referral document not found."
+      });
     };
 
     if (user.accountType === "Bronze" && referralDoc.upgradeTokens >= 1) {
@@ -130,7 +130,7 @@ const upgradeAccount = async (req, res, next) => {
         message: "Upgrade to Silver successful.",
         accountType: user.accountType,
       });
-    }
+    };
 
     if (user.accountType === "Silver" && referralDoc.upgradeTokens >= 5) {
       user.accountType = "Gold";
@@ -143,38 +143,35 @@ const upgradeAccount = async (req, res, next) => {
         message: "Upgrade to Gold successful.",
         accountType: user.accountType,
       });
-    }
+    };
 
     if (user.accountType === "Gold") {
       return res.status(400).json({ message: "Account is already Gold." });
-    }
+    };
 
     if (user.accountType === "Silver" && referralDoc.upgradeTokens < 5) {
-      return res
-        .status(400)
-        .json({
-          message: `Not enough tokens for Gold upgrade. Requires 5, yo currently have ${referralDoc.upgradeTokens} tokens.`,
-        });
-    }
+      return res.status(400).json({
+        message: `Not enough tokens for Gold upgrade. Requires 5 token, you currently have ${referralDoc.upgradeTokens} tokens.`,
+      });
+    };
 
     if (user.accountType === "Bronze" && referralDoc.upgradeTokens < 1) {
-      return res
-        .status(400)
-        .json({
-          message: `Not enough tokens for Silver upgrade. Requires 1, has ${referralDoc.upgradeTokens}.`,
-        });
-    }
-
-    return res
-      .status(400)
-      .json({
-        message:
-          "Not eligible for upgrade based on current account type or token balance.",
+      return res.status(400).json({
+        message: `Not enough tokens for Silver upgrade. Requires 1 token, has ${referralDoc.upgradeTokens}.`,
       });
+    };
+
+    return res.status(400).json({
+      message:
+        "Not eligible for upgrade based on current account type or token balance.",
+    });
   } catch (error) {
     console.error("Error during account upgrade:", error);
-    next(error);
-  }
+    res.status(500).json({
+      message: "An error occurred while upgrading the account. please try again later",
+      error: error.message,
+    });
+  };
 };
 
 const getReferralInfo = async (req, res, next) => {
@@ -185,7 +182,7 @@ const getReferralInfo = async (req, res, next) => {
 
     if (!referralDoc) {
       return res.status(404).json({ message: "Referral data not found" });
-    }
+    };
 
     res.status(200).json({
       message: "Referral info fetched successfully",
@@ -196,22 +193,31 @@ const getReferralInfo = async (req, res, next) => {
   }
 };
 
-const getReferrerDashboardData = async (req, res, next) => {
+const getReferrerDashboardData = async (req, res) => {
   try {
     const referrerId = req.user.id;
     const referrerReferralDoc = await Referral.findOne({ userId: referrerId })
       .populate({
-        path: 'referrals',
+        path: 'referrals.userId',
         model: 'User',
-        select: 'firstName lastName referralCode accountType'
+        select: 'firstName lastName activationStatus accountType referralCode',
       })
       .exec();
+
     if (!referrerReferralDoc) {
       return res.status(404).json({ message: "Referral data not found for this user." });
-    }
+    };
 
     const dashboardReferralsData = [];
-    for (const directReferralUser of referrerReferralDoc.referrals) {
+
+    for (const directReferral of referrerReferralDoc.referrals) {
+
+      const directReferralUser = directReferral.userId;
+      if (!directReferralUser) {
+        console.warn(`Could not find User data for a referral ID in referrer's referrals array. Skipping.`);
+        continue; // Skip to the next referral
+      };
+
       const directReferralReferralDoc = await Referral.findOne({ userId: directReferralUser._id });
 
       let visitorsCount = 0;
@@ -220,28 +226,28 @@ const getReferrerDashboardData = async (req, res, next) => {
       if (directReferralReferralDoc) {
         visitorsCount = directReferralReferralDoc.visitors.length;
         referralsCount = directReferralReferralDoc.referrals.length;
-      }
+      };
 
       dashboardReferralsData.push({
-        id: directReferralUser._id,
-        firstName: directReferralUser.firstName,
-        lastName: directReferralUser.lastName,
-        referralCode: directReferralUser.referralCode,
-        accountType: directReferralUser.accountType,
-        visitorsCount: visitorsCount,
-        referralsCount: referralsCount
+        userId: directReferralUser._id,
+        FullName: `${directReferralUser.firstName} ${directReferralUser.lastName}`,
+        Referral_Code: directReferralUser.referralCode,
+        Activation_Status: directReferralUser.activationStatus,
+        Account_Type: directReferralUser.accountType,
+        Visitors: visitorsCount,
+        Direct_Referrals: referralsCount,
       });
-    }
+    };
 
     return res.status(200).json({
       message: 'Referral dashboard data retrieved successfully.',
       data: dashboardReferralsData,
-      totalDirectReferrals: dashboardReferralsData.length
+      totalDirectReferrals: dashboardReferralsData.length,
     });
 
   } catch (error) {
     console.error('Error fetching referrer dashboard data:', error);
-    next(error);
+    res.status(500).json({ message: 'Failed to retrieve referrer dashboard data.', error: error.message });
   }
 };
 
@@ -271,7 +277,7 @@ exports.findReferralDoc = async function (userId) {
 
 }
 
-const getReferralAndVisitorsCount = async (req, res, next) => {
+const getReferralAndVisitorsCount = async (req, res) => {
   try {
     const userId = req.user.id;
     const user = await Referral.findOne({ userId });
@@ -287,8 +293,11 @@ const getReferralAndVisitorsCount = async (req, res, next) => {
       visitors: visitorCount,
     });
   } catch (error) {
-    next(error);
-  }
+    res.status(500).json({
+      message: "An error occurred while retrieving referral and visitors count",
+      error: error.message
+    })
+  };
 };
 
 module.exports = {
