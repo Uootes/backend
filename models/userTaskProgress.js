@@ -7,6 +7,10 @@ const userTaskProgressSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  userName: {
+    type: String,
+    required: true
+  },
   tasks: [
     {
       taskId: {
