@@ -4,13 +4,19 @@ const userTaskProgress = require('../models/userTaskProgress');
 
 exports.accessUserTaskProgress = async (req, res) => {
   try {
-    const { id: userId } = req.user; 
-    const user = await User.findById(userId);
+    const id = req.user.id;
+    const user = await User.findById(id);
     if (!user) {
-      return res.status(404).json({ message: "User not found." }); 
+      return res.status(404).json({ message: "User not found." });
     };
 
-    let userProgress = await userTaskProgress.findOne({ userId }).populate('tasks.taskId');
+    // let userProgress = await userTaskProgress.findOne({ id }).populate('tasks.taskId');
+
+    let userProgress = await userTaskProgress.findOne({ userId })
+      .populate({
+        path: 'tasks.taskId',
+        select: 'name description link'
+      });
 
     if (userProgress) {
       return res.status(200).json({
@@ -18,8 +24,8 @@ exports.accessUserTaskProgress = async (req, res) => {
         data: userProgress
       });
     };
-    
-// initialize a new user task progress for the user if it doesn't exist
+
+    // initialize a new user task progress for the user if it doesn't exist
     const activeTasks = await Task.find({ isActive: true });
     if (activeTasks.length === 0) {
       return res.status(404).json({ message: "No active tasks available to start." });
@@ -27,11 +33,12 @@ exports.accessUserTaskProgress = async (req, res) => {
 
     const progressList = activeTasks.map(task => ({
       taskId: task._id,
-      status: 'start' 
+      status: 'start'
     }));
 
     const newProgress = new userTaskProgress({
-      userId,
+      id,
+      userName: user.firstName + ' ' + user.lastName,
       tasks: progressList,
       completedCount: 0,
       isRewardClaimed: false
@@ -52,8 +59,8 @@ exports.accessUserTaskProgress = async (req, res) => {
 };
 
 
- exports.getUserTaskProgress = async (req, res) => {
-   try {
+exports.getUserTaskProgress = async (req, res) => {
+  try {
 
     const { id: userId } = req.user;
     const progress = await userTaskProgress.findOne({ userId }).populate('tasks.taskId');
@@ -70,7 +77,7 @@ exports.accessUserTaskProgress = async (req, res) => {
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const  userId = req.user.id
+    const userId = req.user.id
 
     const userProgress = await userTaskProgress.findOne({ userId });
     if (!userProgress) {
@@ -80,7 +87,7 @@ exports.updateTaskStatus = async (req, res) => {
     const taskIndex = userProgress.tasks.findIndex((task) => task.taskId.toString() === taskId.toString)();
     if (taskIndex === -1) {
       return res.status(404).json({ message: 'Task not found in progress list.' });
-    }; 
+    };
 
     if (userProgress.tasks[taskIndex].status === 'done') {
       return res.status(400).json({ message: 'Task already completed.' });
@@ -98,8 +105,8 @@ exports.updateTaskStatus = async (req, res) => {
 
 exports.claimTaskReward = async (req, res) => {
   try {
-    const { id: userId } = req.user;
-    const userProgress = await userTaskProgress.findOne({ userId });
+    const id = req.user.id;
+    const userProgress = await userTaskProgress.findOne({ id });
     if (!userProgress || userProgress.rewardClaimed === true) {
       return res.status(400).json({ message: 'Reward already claimed or progress not found.' });
     };
@@ -109,7 +116,7 @@ exports.claimTaskReward = async (req, res) => {
       return res.status(400).json({ message: 'please complete all task to claim reward' });
     };
 
-    const user = await User.findById(userId);
+    const user = await User.findById(id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
     const CPT_REWARD = 100000;
@@ -117,9 +124,9 @@ exports.claimTaskReward = async (req, res) => {
 
     // Set lock time based on account type
     const lockDurations = {
-      bronze: 360, // 15 days
-      silver: 168, // 7 days
-      gold: 72     // 3 days
+      bronze: 360, 
+      silver: 168, 
+      gold: 72 
     };
 
     const lockHours = lockDurations[user.accountType.toLowerCase()] || 360;
@@ -138,8 +145,8 @@ exports.claimTaskReward = async (req, res) => {
 
 exports.getUserProgressCount = async (req, res) => {
   try {
-    const { id: userId } = req.user;
-    const progress = await userTaskProgress.findOne({ userId });
+    const  id = req.user.id;
+    const progress = await userTaskProgress.findOne({ id });
     if (!progress) {
       return res.status(404).json({ message: 'User progress not found.' });
     };
