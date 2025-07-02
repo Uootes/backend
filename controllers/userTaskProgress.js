@@ -2,68 +2,86 @@ const Task = require('../models/task')
 const User = require('../models/user');
 const userTaskProgress = require('../models/userTaskProgress');
 
+const mongoose = require('mongoose');
 exports.accessUserTaskProgress = async (req, res) => {
   try {
-    const id = req.user.id;
-    const user = await User.findById(id);
+
+    const userIdString = req.user.id;
+    // converting the userIdString to a Mongoose ObjectId instance
+    const userId = new mongoose.Types.ObjectId(userIdString);
+
+    const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found." });
     };
 
-    // let userProgress = await userTaskProgress.findOne({ id }).populate('tasks.taskId');
-
+    // find an existing userTaskProgress document for this user
     let userProgress = await userTaskProgress.findOne({ userId })
       .populate({
-        path: 'tasks.taskId',
-        select: 'name description link'
+        path: 'tasks.taskId', 
+        model: 'Task',    
+        select: 'title description link' 
       });
 
+    // Check if a userTaskProgress document was found.
     if (userProgress) {
       return res.status(200).json({
         message: 'User task progress retrieved successfully.',
         data: userProgress
       });
-    };
+    } else {
+      // Fetch all active tasks from the Task collection.
+      const activeTasks = await Task.find({ isActive: true });
 
-    // initialize a new user task progress for the user if it doesn't exist
-    const activeTasks = await Task.find({ isActive: true });
-    if (activeTasks.length === 0) {
-      return res.status(404).json({ message: "No active tasks available to start." });
-    };
+      if (activeTasks.length === 0) {
+        return res.status(404).json({ message: "No active tasks available to start." });
+      };
 
-    const progressList = activeTasks.map(task => ({
-      taskId: task._id,
-      status: 'start'
-    }));
+      // Create the initial progress list for the new user.
+      const progressList = activeTasks.map(task => ({
+        taskId: task._id,
+        status: 'start'
+      }));
 
-    const newProgress = new userTaskProgress({
-      id,
-      userName: user.firstName + ' ' + user.lastName,
-      tasks: progressList,
-      completedCount: 0,
-      isRewardClaimed: false
-    });
+      const newProgress = new userTaskProgress({
+        userId, 
+        userName: `${user.firstName} ${user.lastName}`, 
+        tasks: progressList,
+        completedCount: 0,
+        rewardClaimed: false,
+        rewardClaimedAt: null 
+      });
 
-    await newProgress.save();
-    await newProgress.populate('tasks.taskId');
+      await newProgress.save();
 
-    return res.status(201).json({
-      message: 'Task progress started and retrieved.',
-      data: newProgress
-    });
+      // Populate the newly saved document for the response,includeing the task details (title, description, link).
+      await newProgress.populate({
+        path: 'tasks.taskId',
+        model: 'Task',
+        select: 'title description link' 
+      });
 
+      return res.status(201).json({
+        message: 'Task progress started and retrieved.',
+        data: newProgress
+      });
+    }
   } catch (error) {
     console.error("Error accessing task progress:", error);
-    return res.status(500).json({ message: 'Error accessing task progress.', error: error.message });
-  }
+    res.status(500).json({
+      message: 'Error accessing task progress.',
+      error: error.message || 'An unexpected error occurred.'
+    })
+  };
 };
 
 
 exports.getUserTaskProgress = async (req, res) => {
   try {
 
-    const { id: userId } = req.user;
-    const progress = await userTaskProgress.findOne({ userId }).populate('tasks.taskId');
+    const id = req.user.id;
+    const userId = new mongoose.Types.ObjectId(id);
+    const progress = await userTaskProgress.findOne({ userId: userId }).populate('tasks.taskId');
     if (!progress) {
       return res.status(404).json({ message: 'No progress found.' });
     };
@@ -77,14 +95,20 @@ exports.getUserTaskProgress = async (req, res) => {
 exports.updateTaskStatus = async (req, res) => {
   try {
     const { taskId } = req.params;
-    const userId = req.user.id
+    const id = req.user.id
+    const convetedId = new mongoose.Types.ObjectId(id);
 
-    const userProgress = await userTaskProgress.findOne({ userId });
+    const userProgress = await userTaskProgress.findOne({ userId: convetedId });
     if (!userProgress) {
       return res.status(404).json({ message: 'User progress not found.' });
     };
 
-    const taskIndex = userProgress.tasks.findIndex((task) => task.taskId.toString() === taskId.toString)();
+    // const taskIndex = userProgress.tasks.findIndex((task) => task.taskId.toString() === taskId.toString)();
+
+    const taskIndex = userProgress.tasks.findIndex(
+      (task) => task.taskId.toString() === taskId.toString()
+    );
+
     if (taskIndex === -1) {
       return res.status(404).json({ message: 'Task not found in progress list.' });
     };
@@ -99,7 +123,8 @@ exports.updateTaskStatus = async (req, res) => {
 
     return res.status(200).json({ message: 'Task marked as completed.', data: userProgress });
   } catch (error) {
-    return res.status(500).json({ message: 'Error updating task.', error });
+    console.log('Error updating task status:', error);
+    res.status(500).json({ message: 'Error updating task.',error:  error.message });
   };
 };
 
@@ -124,9 +149,9 @@ exports.claimTaskReward = async (req, res) => {
 
     // Set lock time based on account type
     const lockDurations = {
-      bronze: 360, 
-      silver: 168, 
-      gold: 72 
+      bronze: 360,
+      silver: 168,
+      gold: 72
     };
 
     const lockHours = lockDurations[user.accountType.toLowerCase()] || 360;
@@ -145,8 +170,9 @@ exports.claimTaskReward = async (req, res) => {
 
 exports.getUserProgressCount = async (req, res) => {
   try {
-    const  id = req.user.id;
-    const progress = await userTaskProgress.findOne({ id });
+    const id = req.user.id;
+    const userId = new mongoose.Types.ObjectId(id);
+    const progress = await userTaskProgress.findOne({ userId });
     if (!progress) {
       return res.status(404).json({ message: 'User progress not found.' });
     };
