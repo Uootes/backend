@@ -25,11 +25,14 @@ exports.createTask = async (req, res) => {
 
 exports.getAllTasks = async (req, res) => {
     try {
-        const tasks = await Task.find().select('title', 'description', 'link', 'isActive');
+        const tasks = await Task.find().select('title description link isActive');
+        const taskCount = await Task.countDocuments();
 
-        return res.status(200).json({message: 'Task fetched successfulle', data: tasks });
+        return res.status(200).json({message: 'Task fetched successfulle', data: tasks , count: taskCount });
 
     } catch (err) {
+        console.log("Error fetching tasks:", err);
+        
         return res.status(500).json({ message: 'Server error', error: err.message });
     }
 };
