@@ -46,7 +46,7 @@ const register = async (req, res) => {
         message: `User with email: ${email} already exists`
       })
     };
-    
+
     let referrerUser = null;
     if (referralCode) {
       referrerUser = await User.findOne({ referralCode });
@@ -179,7 +179,7 @@ const verifyOtp = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({ message: 'Email verified successfully' });
+    res.status(200).json({ message: 'verified successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to verify OTP: ' + error.message });
@@ -272,45 +272,35 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { otp, newPassword, confirmPassword } = req.body;
-
-    if (!otp || !newPassword || !confirmPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
+    const { newPassword, confirmPassword } = req.body;
+    const { id: userId } = req.params;
+    const user = await User.findById(userId)
+    if (!user) {
+      return res.status(404).json({
+        message: 'User not found'
+      })
     }
-
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({ message: 'Passwords do not match' });
+      return res.status(400).json({
+        message: 'Password do not match'
+      });
     }
-
-    const user = await User.findOne({ passwordResetOtp: otp });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-
-    // Check OTP and expiration
-    if (
-      !user.passwordResetOtp ||
-      user.passwordResetOtp !== otp ||
-      !user.passwordResetOtpExpires ||
-      user.passwordResetOtpExpires < Date.now()
-    ) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-
-    // Hash the new password and update user
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    user.passwordHash = passwordHash;
-
-    // Clear OTP fields after successful reset
-    user.passwordResetOtp = undefined;
-    user.passwordResetOtpExpires = undefined;
-
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt)
+    user.password = hashedPassword
     await user.save();
 
-    res.status(200).json({ message: 'Password reset successfully' });
+    res.status(200).json({
+      message: 'Password reset successful'
+    })
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Failed to reset password: ' + error.message });
+    res.status(500).json({
+      message: 'Error reseting password', error
+    });
+
   }
-};
+}
 
 // Activate Account
 const activate = async (req, res) => {

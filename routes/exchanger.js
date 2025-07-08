@@ -57,11 +57,7 @@ const router = require('express').Router();
  *                 example: "https://example.com/images/exchanger-profile.jpg"
  *     responses:
  *       201:
- *         description: Exchanger registered successfully
- *       400:
- *         description: Bad request
- *       500:
- *         description: Internal Server Error
+ *         description: Exchanger registered successfully, OTP sent to email
  *         content:
  *           application/json:
  *             schema:
@@ -69,7 +65,47 @@ const router = require('express').Router();
  *               properties:
  *                 message:
  *                   type: string
- *                   example: "Error registering exchanger: <error-message>"
+ *                   example: Exchanger registered successfully, OTP sent to email
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: 507f1f77bcf86cd799439011
+ *                     firstName:
+ *                       type: string
+ *                       example: John
+ *                     lastName:
+ *                       type: string
+ *                       example: Doe
+ *                     email:
+ *                       type: string
+ *                       example: exchanger@example.com
+ *                     country:
+ *                       type: string
+ *                       example: USA
+ *                     accountType:
+ *                       type: string
+ *                       example: regular
+ *                     kycStatus:
+ *                       type: string
+ *                       example: pending
+ *                     activationStatus:
+ *                       type: boolean
+ *                       example: false
+ *                     profilePicture:
+ *                       type: object
+ *                       properties:
+ *                         imageUrl:
+ *                           type: string
+ *                           example: "https://example.com/images/exchanger-profile.jpg"
+ *                         publicId:
+ *                           type: string
+ *                           example: "exchanger_profile_pic_123"
  */
 router.post('/signUp-exchanger', upload.single('profilePicture'), register);
 
@@ -219,7 +255,7 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *                   type: string
  *                   example: "Error resetting password: <error-message>"
  */
-router.post('/resetPassword-exchanger', resetPassword);
+router.post('/resetPassword-exchanger/:id', resetPassword);
 
 module.exports = router;
 

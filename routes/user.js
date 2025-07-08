@@ -69,7 +69,7 @@ const router = require('express').Router();
  *                 example: "https://example.com/images/profile.jpg"
  *     responses:
  *       201:
- *         description: User registered successfully,Otp sent to Mail
+ *         description: User registered successfully, OTP sent to email
  *         content:
  *           application/json:
  *             schema:
@@ -77,15 +77,15 @@ const router = require('express').Router();
  *               properties:
  *                 message:
  *                   type: string
- *                   example: User registered successfully
+ *                   example: User registered successfully, OTP sent to email
  *                 token:
  *                   type: string
  *                   description: JWT authentication token
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *                 user:
+ *                 data:
  *                   type: object
  *                   properties:
- *                     id:
+ *                     _id:
  *                       type: string
  *                       example: 507f1f77bcf86cd799439011
  *                     firstName:
@@ -97,6 +97,27 @@ const router = require('express').Router();
  *                     email:
  *                       type: string
  *                       example: user@example.com
+ *                     country:
+ *                       type: string
+ *                       example: USA
+ *                     accountType:
+ *                       type: string
+ *                       example: Bronze
+ *                     profilePicture:
+ *                       type: object
+ *                       properties:
+ *                         imageUrl:
+ *                           type: string
+ *                           example: "https://example.com/images/profile.jpg"
+ *                         publicId:
+ *                           type: string
+ *                           example: "profile_pic_123"
+ *                     referralCode:
+ *                       type: string
+ *                       example: GSCSO9Q50
+ *                     referredBy:
+ *                       type: string
+ *                       example: 507f1f77bcf86cd799439012
  *       400:
  *         description: Bad request
  *         content:
@@ -117,7 +138,7 @@ const router = require('express').Router();
  *                   properties:
  *                     message:
  *                       type: string
- *                       example: Email already in use
+ *                       example: User with email: user@example.com already exists
  *                 - type: object
  *                   properties:
  *                     message:
@@ -273,13 +294,15 @@ router.post('/login', login)
  *                   type: string
  *                   example: Failed to send OTP
  */
+
 router.post('/forgotPassword', forgotPassword)
+
 /**
  * @swagger
  * /api/v1/resetPassword:
  *   post:
- *     summary: Reset user password with OTP
- *     description: Verify OTP and set new password
+ *     summary: Reset user password 
+ *     description: set new password
  *     tags: [User Authentication]
  *     requestBody:
  *       required: true
@@ -345,7 +368,7 @@ router.post('/forgotPassword', forgotPassword)
  *                   type: string
  *                   example: Failed to reset password
  */
-router.post('/resetPassword', resetPassword)
+router.post('/resetPassword/:id', resetPassword)
 /**
  * @swagger
  * /api/v1/activate:

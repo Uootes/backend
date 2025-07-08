@@ -6,7 +6,7 @@ const exchangerSchema = new mongoose.Schema({
     lastName: { type: String, required: true },
     country: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true },
-    pinHash: { type: String, required: true },
+    password: { type: String, required: true },
     kycStatus: { type: String, enum: ['pending', 'verified'], default: 'pending' },
     accountType: { type: String, enum: ['regular', 'admin'], default: 'regular' },
     profilePicture: {
@@ -24,8 +24,8 @@ const exchangerSchema = new mongoose.Schema({
     passwordResetOtpExpires: { type: Date },
 }, { timestamps: true });
 
-exchangerSchema.methods.comparePIN = function (pin) {
-    return bcrypt.compare(pin, this.pinHash);
+exchangerSchema.methods.comparePIN = function (password) {
+    return bcrypt.compare(password, this.password);
 };
 
 const Exchanger = mongoose.model('Exchanger', exchangerSchema);

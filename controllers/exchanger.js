@@ -42,14 +42,14 @@ const register = async (req, res) => {
         message: `User with email: ${email} already exists`
       })
     }
-    const pinHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const newExchanger = new Exchanger({
         firstName,
         lastName,
         country,
         email: email.toLowerCase(),
-        pinHash,
+        password: passwordHash,
         kycStatus: 'pending',
         accountType: 'regular',
         activationStatus: false,
@@ -134,7 +134,7 @@ const verifyOtp = async (req, res) => {
 
     await exchanger.save();
 
-    res.status(200).json({ message: 'Email verified successfully' });
+    res.status(200).json({ message: 'verified successfully' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Failed to verify OTP: ' + error.message });
@@ -220,47 +220,38 @@ const forgotPassword = async (req, res) => {
   }
 };
 
+
 const resetPassword = async (req, res) => {
   try {
-    const { otp, newPassword, confirmPassword } = req.body;
-
-    if ( !otp || !newPassword || !confirmPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
+    const { newPassword, confirmPassword } = req.body;
+    const { id: exchangerId } = req.params;
+    const exchanger = await Exchanger.findById(exchangerId)
+    if (!exchanger) {
+      return res.status(404).json({
+        message: 'Exchanger not found'
+      })
     }
-
     if (newPassword !== confirmPassword) {
-      return res.status(400).json({ message: 'Passwords do not match' });
+      return res.status(400).json({
+        message: 'Password do not match'
+      });
     }
-
-    const exchanger = await Exchanger.findOne({ passwordResetOtp: otp });
-    if (!exchanger) return res.status(404).json({ message: 'Exchanger not found' });
-
-    // Check OTP and expiration
-    if (
-      !exchanger.passwordResetOtp ||
-      exchanger.passwordResetOtp !== otp ||
-      !exchanger.passwordResetOtpExpires ||
-      exchanger.passwordResetOtpExpires < Date.now()
-    ) {
-      return res.status(400).json({ message: 'Invalid or expired OTP' });
-    }
-
-    // Hash the new password and update exchanger
-    const pinHash = await bcrypt.hash(newPassword, 10);
-    exchanger.pinHash = pinHash;
-
-    // Clear OTP fields after successful reset
-    exchanger.passwordResetOtp = undefined;
-    exchanger.passwordResetOtpExpires = undefined;
-
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt)
+    exchanger.password = hashedPassword
     await exchanger.save();
 
-    res.status(200).json({ message: 'Password reset successfully' });
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to reset password: ' + error.message });
-  }
-};
+    res.status(200).json({
+      message: 'Password reset successful'
+    })
 
+  } catch (error) {
+    res.status(500).json({
+      message: 'Error reseting password', error
+    });
+
+  }
+}
 module.exports = {
     register,
     verifyOtp,
