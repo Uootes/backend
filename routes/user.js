@@ -138,7 +138,7 @@ const router = require('express').Router();
  *                   properties:
  *                     message:
  *                       type: string
- *                       example: User with email: user@example.com already exists
+ *                       example: "User with email: user@example.com already exists"
  *                 - type: object
  *                   properties:
  *                     message:
