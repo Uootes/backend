@@ -226,13 +226,9 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *           schema:
  *             type: object
  *             required:
- *               - otp
  *               - newPassword
  *               - confirmPassword
  *             properties:
- *               otp:
- *                 type: string
- *                 example: 123456
  *               newPassword:
  *                 type: string
  *                 example: newpassword123

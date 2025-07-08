@@ -311,13 +311,8 @@ router.post('/forgotPassword', forgotPassword)
  *           schema:
  *             type: object
  *             required:
- *               - otp
  *               - newPin
  *             properties:
- *               otp:
- *                 type: string
- *                 example: "123456"
- *                 description: 6-digit OTP received via email
  *               newPassword:
  *                 type: string
  *                 example: "newpassword123"
