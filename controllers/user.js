@@ -46,7 +46,6 @@ const register = async (req, res) => {
         message: `User with email: ${email} already exists`
       })
     };
-
     let referrerUser = null;
     if (referralCode) {
       referrerUser = await User.findOne({ referralCode });
