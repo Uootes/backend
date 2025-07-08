@@ -13,7 +13,8 @@ const transactionSchema = new mongoose.Schema({
   status: { type: String, enum: ['Pending', 'Make Payment', 'Get Credited'] },
   timer: { type: Number, default: 0 },
   dispute: { type: String }
-}, { timestamps: true });
+}, 
+{ timestamps: true });
 
 const transactionModel = mongoose.model('transactions', transactionSchema);
 
