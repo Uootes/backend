@@ -252,10 +252,80 @@ const resetPassword = async (req, res) => {
 
   }
 }
+const getProfile = async (req, res) => {
+  try {
+    const exchanger = await Exchanger.findById(req.user.id).select('firstName lastName email country accountType activationStatus profilePicture');
+    if (!exchanger) {
+      return res.status(404).json({ message: 'Exchanger not found' });
+    }
+    res.json({ profile: exchanger });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, country } = req.body;
+    const exchanger = await Exchanger.findById(req.user.id);
+    if (!exchanger) {
+      return res.status(404).json({ message: 'Exchanger not found' });
+    }
+    if (firstName) exchanger.firstName = firstName;
+    if (lastName) exchanger.lastName = lastName;
+    if (country) exchanger.country = country;
+
+    await exchanger.save();
+    res.json({ message: 'Profile updated successfully', profile: exchanger });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+};
+
+const uploadProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const exchanger = await Exchanger.findById(req.user.id);
+    if (!exchanger) {
+      return res.status(404).json({ message: 'Exchanger not found' });
+    }
+
+    // Upload new image to cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path);
+    // Delete local file after upload
+    fs.unlinkSync(req.file.path);
+
+    // Delete old profile picture from cloudinary if exists
+    if (exchanger.profilePicture && exchanger.profilePicture.publicId) {
+      await cloudinary.uploader.destroy(exchanger.profilePicture.publicId);
+    }
+
+    // Update exchanger profile picture
+    exchanger.profilePicture = {
+      imageUrl: result.secure_url,
+      publicId: result.public_id
+    };
+
+    await exchanger.save();
+
+    res.json({ message: 'Profile picture updated successfully', profilePicture: exchanger.profilePicture });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to upload profile picture' });
+  }
+};
+
 module.exports = {
     register,
     verifyOtp,
     login,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getProfile,
+    updateProfile,
+    uploadProfilePicture
 };
