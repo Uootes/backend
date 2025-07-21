@@ -1,4 +1,4 @@
-const { register, login, activate, forgotPassword, resetPassword, verifyOtp } = require('../controllers/user');
+const { register, login, activate, forgotPassword, resetPassword, verifyOtp, getProfile, updateProfile, uploadProfilePicture } = require('../controllers/user');
 const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = require('../utils/multer');
@@ -426,4 +426,170 @@ router.post('/resetPassword/:id', resetPassword)
  */ router.post('/activate', auth, activate)
 
 router.patch("/activate",auth, activate)
+
+/**
+ * @swagger
+ * tags:
+ *   name: User Profile
+ *   description: User profile management
+ */
+
+/**
+ * @swagger
+ * /api/v1/profile:
+ *   get:
+ *     summary: Get the authenticated user's profile
+ *     tags: [User Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     firstName:
+ *                       type: string
+ *                       example: John
+ *                     lastName:
+ *                       type: string
+ *                       example: Doe
+ *                     email:
+ *                       type: string
+ *                       example: user@example.com
+ *                     country:
+ *                       type: string
+ *                       example: USA
+ *                     referralCode:
+ *                       type: string
+ *                       example: GSCSO9Q50
+ *                     accountType:
+ *                       type: string
+ *                       example: Bronze
+ *                     activationStatus:
+ *                       type: string
+ *                       example: active
+ *                     profilePicture:
+ *                       type: object
+ *                       properties:
+ *                         imageUrl:
+ *                           type: string
+ *                           example: "https://example.com/images/profile.jpg"
+ *                         publicId:
+ *                           type: string
+ *                           example: "profile_pic_123"
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ */
+router.get('/profile', auth, getProfile);
+
+/**
+ * @swagger
+ * /api/v1/profile:
+ *   put:
+ *     summary: Update the authenticated user's profile
+ *     tags: [User Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               country:
+ *                 type: string
+ *                 example: USA
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Profile updated successfully
+ *                 profile:
+ *                   type: object
+ *                   properties:
+ *                     firstName:
+ *                       type: string
+ *                       example: John
+ *                     lastName:
+ *                       type: string
+ *                       example: Doe
+ *                     country:
+ *                       type: string
+ *                       example: USA
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ */
+router.put('/profile', auth, updateProfile);
+
+/**
+ * @swagger
+ * /api/v1/profile/picture:
+ *   post:
+ *     summary: Upload or update the authenticated user's profile picture
+ *     tags: [User Profile]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               profilePicture:
+ *                 type: string
+ *                 format: binary
+ *                 description: The profile picture file to upload
+ *     responses:
+ *       200:
+ *         description: Profile picture updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Profile picture updated successfully
+ *                 profilePicture:
+ *                   type: object
+ *                   properties:
+ *                     imageUrl:
+ *                       type: string
+ *                       example: "https://example.com/images/profile.jpg"
+ *                     publicId:
+ *                       type: string
+ *                       example: "profile_pic_123"
+ *       400:
+ *         description: No file uploaded
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       404:
+ *         description: User not found
+ */
+router.post('/profile/picture', auth, upload.single('profilePicture'), uploadProfilePicture);
+
 module.exports = router;

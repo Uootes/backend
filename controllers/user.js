@@ -301,7 +301,6 @@ const resetPassword = async (req, res) => {
   }
 }
 
-// Activate Account
 const activate = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -327,11 +326,79 @@ const activate = async (req, res) => {
   }
 };
 
+
+const getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('firstName lastName email country referralCode accountType activationStatus profilePicture');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ profile: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+};
+
+const updateProfile = async (req, res) => {
+  try {
+    const { firstName, lastName, country } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (country) user.country = country;
+
+    await user.save();
+    res.json({ message: 'Profile updated successfully', profile: user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to update profile' });
+  }
+};
+
+const uploadProfilePicture = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const result = await cloudinary.uploader.upload(req.file.path);
+    fs.unlinkSync(req.file.path);
+
+    if (user.profilePicture && user.profilePicture.publicId) {
+      await cloudinary.uploader.destroy(user.profilePicture.publicId);
+    }
+
+    user.profilePicture = {
+      imageUrl: result.secure_url,
+      publicId: result.public_id
+    };
+
+    await user.save();
+
+    res.json({ message: 'Profile picture updated successfully', profilePicture: user.profilePicture });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Failed to upload profile picture' });
+  }
+};
+
+
 module.exports = {
   register,
   verifyOtp,
   login,
   forgotPassword,
   resetPassword,
-  activate
+  activate,
+  getProfile,
+  uploadProfilePicture,
+  updateProfile
 };
