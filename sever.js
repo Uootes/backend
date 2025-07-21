@@ -15,6 +15,7 @@ const exchangerRouter = require('./routes/exchanger');
 const referralRoutes = require('./routes/referral');
 const taskRoutes = require('./routes/task');
 const companyWalletRouter = require('./routes/companyWallet');
+const adminRouter = require('./routes/admin');
 const cron = require('node-cron');
 const { splittingRevenue } = require('./utils/companyWallet');
 const userTaskProgressRoute = require('./routes/user.taskProgress')
@@ -53,6 +54,7 @@ app.use(baseUrl, exchangerRouter);
 app.use(`${baseUrl}/referrals`, referralRoutes);
 app.use(`${baseUrl}/tasks`, taskRoutes);
 app.use(baseUrl, companyWalletRouter);
+app.use(baseUrl, adminRouter);
 app.use(`${baseUrl}/taskprogresses`, userTaskProgressRoute)
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
