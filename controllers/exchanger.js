@@ -158,7 +158,11 @@ const login = async (req, res) => {
         id: exchanger._id,
         firstName: exchanger.firstName,
         lastName: exchanger.lastName,
-        email: exchanger.email
+        email: exchanger.email,
+        country: exchanger.country,
+        accountType: exchanger.accountType,
+        activationStatus: exchanger.activationStatus,
+        profilePicture: exchanger.profilePicture
       }
     });
    } catch (error) {
