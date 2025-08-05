@@ -7,6 +7,8 @@ const adminSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['superadmin', 'admin', 'customerservice'], required: true },
+  passwordResetOtp: { type: String },
+  passwordResetOtpExpires: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 

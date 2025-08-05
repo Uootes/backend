@@ -1,4 +1,5 @@
 const { register, login, activate, forgotPassword, resetPassword, verifyOtp, getProfile, updateProfile, uploadProfilePicture } = require('../controllers/user');
+const { submitUserComplaint } = require('../controllers/complaint');
 const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = require('../utils/multer');
@@ -8,7 +9,7 @@ const router = require('express').Router();
 /**
  * @swagger
  * tags:
- *   name: User Authentication
+ *   name: User
  *   description: User registration and authentication
  */
 
@@ -17,7 +18,7 @@ const router = require('express').Router();
  * /api/v1/signUp:
  *   post:
  *     summary: Register a new user
- *     tags: [User Authentication]
+ *     tags: [User]
  *     requestBody:
  *       required: true
  *       content:
@@ -154,7 +155,7 @@ router.post('/signUp', upload.single('profilePicture'), register);
  * /api/v1/verifyOtp:
  *   post:
  *     summary: Verify OTP for user email verification
- *     tags: [User Authentication]
+ *     tags: [User]
  *     requestBody:
  *       required: true
  *       content:
@@ -182,7 +183,7 @@ router.post('/verifyOtp', verifyOtp);
  * /api/v1/login:
  *   post:
  *     summary: Authenticate an existing user
- *     tags: [User Authentication]
+ *     tags: [User]
  *     requestBody:
  *       required: true
  *       content:
@@ -245,7 +246,7 @@ router.post('/login', login)
  *   post:
  *     summary: Request password reset OTP
  *     description: Sends a 6-digit OTP to the user's email for password reset
- *     tags: [User Authentication]
+ *     tags: [User]
  *     requestBody:
  *       required: true
  *       content:
@@ -301,9 +302,9 @@ router.post('/forgotPassword', forgotPassword)
  * @swagger
  * /api/v1/resetPassword:
  *   post:
- *     summary: Reset user password 
- *     description: set new password
- *     tags: [User Authentication]
+ *     summary: Reset user password
+ *     description: Reset password using OTP verification
+ *     tags: [User]
  *     requestBody:
  *       required: true
  *       content:
@@ -311,8 +312,14 @@ router.post('/forgotPassword', forgotPassword)
  *           schema:
  *             type: object
  *             required:
- *               - newPin
+ *               - otp
+ *               - newPassword
+ *               - confirmPassword
  *             properties:
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *                 description: 6-digit OTP received via email
  *               newPassword:
  *                 type: string
  *                 example: "newpassword123"
@@ -331,9 +338,9 @@ router.post('/forgotPassword', forgotPassword)
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Password reset successfully
+ *                   example: Password reset successful
  *       400:
- *         description: Invalid OTP
+ *         description: Bad request - Invalid OTP, expired OTP, or passwords don't match
  *         content:
  *           application/json:
  *             schema:
@@ -341,19 +348,9 @@ router.post('/forgotPassword', forgotPassword)
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Invalid or expired OTP
- *       404:
- *         description: User not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: User not found
+ *                   example: Invalid OTP
  *       500:
- *         description: Password reset failed
+ *         description: Internal server error
  *         content:
  *           application/json:
  *             schema:
@@ -361,9 +358,9 @@ router.post('/forgotPassword', forgotPassword)
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Failed to reset password
+ *                   example: Error resetting password
  */
-router.post('/resetPassword/:id', resetPassword)
+router.post('/resetPassword', resetPassword)
 /**
  * @swagger
  * /api/v1/activate:
@@ -375,7 +372,7 @@ router.post('/resetPassword/:id', resetPassword)
  *       - Deducting activation fee
  *       - Updating account status
  *       - Processing referral promotion
- *     tags: [User Authentication]
+ *     tags: [User]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -429,17 +426,10 @@ router.patch("/activate",auth, activate)
 
 /**
  * @swagger
- * tags:
- *   name: User Profile
- *   description: User profile management
- */
-
-/**
- * @swagger
  * /api/v1/profile:
  *   get:
  *     summary: Get the authenticated user's profile
- *     tags: [User Profile]
+ *     tags: [User]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -495,7 +485,7 @@ router.get('/profile', auth, getProfile);
  * /api/v1/profile:
  *   put:
  *     summary: Update the authenticated user's profile
- *     tags: [User Profile]
+ *     tags: [User]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -549,7 +539,7 @@ router.put('/profile', auth, updateProfile);
  * /api/v1/profile/picture:
  *   post:
  *     summary: Upload or update the authenticated user's profile picture
- *     tags: [User Profile]
+ *     tags: [User]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -591,5 +581,63 @@ router.put('/profile', auth, updateProfile);
  *         description: User not found
  */
 router.post('/profile/picture', auth, upload.single('profilePicture'), uploadProfilePicture);
+
+/**
+ * @swagger
+ * /api/v1/complaint:
+ *   post:
+ *     summary: Submit a complaint
+ *     tags: [User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - description
+ *             properties:
+ *               description:
+ *                 type: string
+ *                 example: "I am experiencing issues with my account activation."
+ *     responses:
+ *       201:
+ *         description: Complaint submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Complaint submitted successfully. You will receive a confirmation email shortly.
+ *                 complaint:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: 507f1f77bcf86cd799439011
+ *                     description:
+ *                       type: string
+ *                       example: I am experiencing issues with my account activation.
+ *                     status:
+ *                       type: string
+ *                       example: open
+ *                     responseMessage:
+ *                       type: string
+ *                       example: Thank you for your complaint. We have received it and will review it carefully. Our team will work to resolve your issue and get back to you as soon as possible.
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Bad request - Description is required
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       500:
+ *         description: Server error
+ */
+router.post('/complaint', auth, submitUserComplaint);
 
 module.exports = router;

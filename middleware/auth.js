@@ -1,6 +1,7 @@
 const jwt =require('jsonwebtoken')
 require('dotenv').config()
 const user = require('../models/user')
+const Admin = require('../models/admin')
 
 const auth = async (req, res, next) => {
     try {
@@ -9,7 +10,7 @@ const auth = async (req, res, next) => {
         return res.status(401).json({ message: "Unauthorized: No token provided" });
       }
   
-      jwt.verify(token,process.env.JWT_SECRET, (err, decoded) => {
+      jwt.verify(token,process.env.JWT_SECRET, async (err, decoded) => {
         if (err) {
           if (err.name === "TokenExpiredError") {
             return res.status(401).json({ message: "Session expired. Please log in again." });
@@ -18,7 +19,15 @@ const auth = async (req, res, next) => {
         }
   
         req.token = decoded;
-        req.user = decoded;
+        
+        // Check if it's an admin token
+        if (decoded.role && ['superadmin', 'admin', 'customerservice'].includes(decoded.role)) {
+          req.admin = decoded;
+          req.user = decoded; // For backward compatibility
+        } else {
+          req.user = decoded;
+        }
+        
         next();
       });
     } catch (err) {

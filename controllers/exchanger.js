@@ -227,33 +227,58 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { newPassword, confirmPassword } = req.body;
-    const { id: exchangerId } = req.params;
-    const exchanger = await Exchanger.findById(exchangerId)
-    if (!exchanger) {
-      return res.status(404).json({
-        message: 'Exchanger not found'
-      })
-    }
-    if (newPassword !== confirmPassword) {
+    const { otp, newPassword, confirmPassword } = req.body;
+    
+    // Validate required fields
+    if (!otp || !newPassword || !confirmPassword) {
       return res.status(400).json({
-        message: 'Password do not match'
+        message: 'OTP, new password, and confirm password are required'
       });
     }
+
+    // Find exchanger by OTP
+    const exchanger = await Exchanger.findOne({ passwordResetOtp: otp });
+    if (!exchanger) {
+      return res.status(400).json({
+        message: 'Invalid OTP'
+      });
+    }
+
+    // Check if OTP is expired
+    if (!exchanger.passwordResetOtpExpires || exchanger.passwordResetOtpExpires < Date.now()) {
+      return res.status(400).json({
+        message: 'OTP has expired'
+      });
+    }
+
+    // Validate password match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: 'Passwords do not match'
+      });
+    }
+
+    // Hash new password and update exchanger
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt)
-    exchanger.password = hashedPassword
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    exchanger.password = hashedPassword;
+    
+    // Clear OTP fields
+    exchanger.passwordResetOtp = undefined;
+    exchanger.passwordResetOtpExpires = undefined;
+    
     await exchanger.save();
 
     res.status(200).json({
       message: 'Password reset successful'
-    })
-
-  } catch (error) {
-    res.status(500).json({
-      message: 'Error reseting password', error
     });
 
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      message: 'Error resetting password',
+      error: error.message
+    });
   }
 }
 const getProfile = async (req, res) => {

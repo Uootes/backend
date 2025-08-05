@@ -75,10 +75,9 @@ const register = async (req, res) => {
       referralCode: userReferralCode,
       referredBy: referrerUser ? referrerUser._id : null,
     });
-    // Generate 6-digit numeric OTP
+
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Save OTP and expiration (10 minutes)
     newUser.passwordResetOtp = otp;
     newUser.passwordResetOtpExpires = Date.now() + 10 * 60 * 1000;
 
@@ -118,7 +117,6 @@ const register = async (req, res) => {
     const newUserName = `${newUser.firstName} ${newUser.lastName}`;
     await initReferral(newUser._id, referrerUser?._id || null, newUserName);
 
-    // Send email to referrer (unchanged, as it's just a notification)
     if (referrerUser) {
       await sendEmail({
         email: referrerUser.email,
@@ -279,33 +277,58 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   try {
-    const { newPassword, confirmPassword } = req.body;
-    const { id: userId } = req.params;
-    const user = await User.findById(userId)
-    if (!user) {
-      return res.status(404).json({
-        message: 'User not found'
-      })
-    }
-    if (newPassword !== confirmPassword) {
+    const { otp, newPassword, confirmPassword } = req.body;
+    
+    // Validate required fields
+    if (!otp || !newPassword || !confirmPassword) {
       return res.status(400).json({
-        message: 'Password do not match'
+        message: 'OTP, new password, and confirm password are required'
       });
     }
+
+    // Find user by OTP
+    const user = await User.findOne({ passwordResetOtp: otp });
+    if (!user) {
+      return res.status(400).json({
+        message: 'Invalid OTP'
+      });
+    }
+
+    // Check if OTP is expired
+    if (!user.passwordResetOtpExpires || user.passwordResetOtpExpires < Date.now()) {
+      return res.status(400).json({
+        message: 'OTP has expired'
+      });
+    }
+
+    // Validate password match
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        message: 'Passwords do not match'
+      });
+    }
+
+    // Hash new password and update user
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt)
-    user.password = hashedPassword
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.passwordHash = hashedPassword;
+    
+    // Clear OTP fields
+    user.passwordResetOtp = undefined;
+    user.passwordResetOtpExpires = undefined;
+    
     await user.save();
 
     res.status(200).json({
       message: 'Password reset successful'
-    })
-
-  } catch (error) {
-    res.status(500).json({
-      message: 'Error reseting password', error
     });
 
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      message: 'Error resetting password',
+      error: error.message
+    });
   }
 }
 
@@ -317,16 +340,16 @@ const activate = async (req, res) => {
     const wallet = await userWallet.findOne({ userId: user._id });
     if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
 
-    if (wallet.GSCBalance >= 2.15) {
-      wallet.GSCBalance -= 2.15;
+    if (wallet.GSCBalance >= 2.5) {
+      wallet.GSCBalance -= 2.5;
       user.activationStatus = "active";
-      await getActivationToken(2.15);
+      await getActivationToken(2.5);
       await promoteVisitorToReferral(user._id);
       await wallet.save();
       await user.save();
       res.json({ message: 'Account activated' });
     } else {
-      res.status(400).json({ message: 'Insufficient balance to activate account' });
+      res.status(400).json({ message: 'Insufficient balance to activate account. Required: 2.5 USD' });
     }
   } catch (error) {
     console.error(error);
