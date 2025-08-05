@@ -1,4 +1,5 @@
 const { register, login, forgotPassword, resetPassword, verifyOtp, getProfile, updateProfile, uploadProfilePicture } = require('../controllers/exchanger');
+const { submitExchangerComplaint } = require('../controllers/complaint');
 const { auth } = require('../middleware/auth');
 const multer = require('multer');
 const upload = require('../utils/multer');
@@ -217,7 +218,7 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  * @swagger
  * /api/v1/resetPassword-exchanger:
  *   post:
- *     summary: Reset exchanger password
+ *     summary: Reset exchanger password using OTP
  *     tags: [Exchanger]
  *     requestBody:
  *       required: true
@@ -226,20 +227,43 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *           schema:
  *             type: object
  *             required:
+ *               - otp
  *               - newPassword
  *               - confirmPassword
  *             properties:
+ *               otp:
+ *                 type: string
+ *                 description: OTP received via email for password reset
+ *                 example: "123456"
  *               newPassword:
  *                 type: string
+ *                 description: New password for the exchanger account
  *                 example: newpassword123
  *               confirmPassword:
  *                 type: string
+ *                 description: Confirmation of the new password
  *                 example: newpassword123
  *     responses:
  *       200:
  *         description: Password reset successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successfully"
  *       400:
- *         description: Invalid token or request
+ *         description: Bad request - Invalid OTP, expired OTP, or password mismatch
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid or expired OTP"
  *       500:
  *         description: Internal Server Error
  *         content:
@@ -251,22 +275,15 @@ router.post('/forgotPassword-exchanger', forgotPassword);
  *                   type: string
  *                   example: "Error resetting password: <error-message>"
  */
-router.post('/resetPassword-exchanger/:id', resetPassword);
+router.post('/resetPassword-exchanger', resetPassword);
 
-
-/**
- * @swagger
- * tags:
- *   name: Exchanger Profile
- *   description: Exchanger profile management
- */
 
 /**
  * @swagger
  * /api/v1/profile-exchanger:
  *   get:
  *     summary: Get the authenticated exchanger's profile
- *     tags: [Exchanger Profile]
+ *     tags: [Exchanger]
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -319,7 +336,7 @@ router.get('/profile-exchanger', auth, getProfile);
  * /api/v1/profile-exchanger:
  *   put:
  *     summary: Update the authenticated exchanger's profile
- *     tags: [Exchanger Profile]
+ *     tags: [Exchanger]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -373,7 +390,7 @@ router.put('/profile-exchanger', auth, updateProfile);
  * /api/v1/profile-exchanger/picture:
  *   post:
  *     summary: Upload or update the authenticated exchanger's profile picture
- *     tags: [Exchanger Profile]
+ *     tags: [Exchanger]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -415,5 +432,63 @@ router.put('/profile-exchanger', auth, updateProfile);
  *         description: Exchanger not found
  */
 router.post('/profile-exchanger/picture', auth, upload.single('profilePicture'), uploadProfilePicture);
+
+/**
+ * @swagger
+ * /api/v1/complaint-exchanger:
+ *   post:
+ *     summary: Submit a complaint as an exchanger
+ *     tags: [Exchanger]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - description
+ *             properties:
+ *               description:
+ *                 type: string
+ *                 example: "I am having trouble with the exchange process."
+ *     responses:
+ *       201:
+ *         description: Complaint submitted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Complaint submitted successfully. You will receive a confirmation email shortly.
+ *                 complaint:
+ *                   type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       example: 507f1f77bcf86cd799439011
+ *                     description:
+ *                       type: string
+ *                       example: I am having trouble with the exchange process.
+ *                     status:
+ *                       type: string
+ *                       example: open
+ *                     responseMessage:
+ *                       type: string
+ *                       example: Thank you for your complaint. We have received it and will review it carefully. Our team will work to resolve your issue and get back to you as soon as possible.
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Bad request - Description is required
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       500:
+ *         description: Server error
+ */
+router.post('/complaint-exchanger', auth, submitExchangerComplaint);
 
 module.exports = router;
