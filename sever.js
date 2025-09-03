@@ -19,6 +19,9 @@ const adminRouter = require('./routes/admin');
 const cron = require('node-cron');
 const { splittingRevenue } = require('./utils/companyWallet');
 const userTaskProgressRoute = require('./routes/user.taskProgress')
+const incubatorRoutes = require('./routes/incubator');
+const { deactivateActivation, completeCountdown } = require('./controllers/incubator');
+
 
 const swaggerOptions = {
   definition: {
@@ -56,6 +59,8 @@ app.use(`${baseUrl}/tasks`, taskRoutes);
 app.use(baseUrl, companyWalletRouter);
 app.use(baseUrl, adminRouter);
 app.use(`${baseUrl}/taskprogresses`, userTaskProgressRoute)
+app.use(`${baseUrl}/incubator`, incubatorRoutes)
+
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
@@ -74,6 +79,14 @@ cron.schedule('0 */6 * * *', async () => {
   } catch (error) {
     console.error('Error splitting revenue balance:', error.message);
   }
+});
+
+// Run every 5 minutes
+cron.schedule("*/5 * * * *", async () => {
+  console.log('⏰ Running scheduled deactivation tasks...');
+  await deactivateActivation();
+  await completeCountdown();
+  // console.log('⏰ Running scheduled autocoplettask tasks...');
 });
 
 app.listen(PORT, () => {

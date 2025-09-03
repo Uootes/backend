@@ -9,6 +9,11 @@ const userWalletSchema = new mongoose.Schema({
     incubatorBalance: { type: Number, default: 0 },
     incubatorTimeStamp: { type: Number, default: 0 },
     ledger: { type: Number, default: 0 },
+    incubatorActivation: {
+        isActivated: { type: Boolean, default: false },
+        activationExpiresAt: { type: Date, default: null },
+        activationRemainingTime: { type: Number, default: 0 } // in ms
+    }
 }, { timestamps: true });
 
 const userWalletModel = mongoose.model('userWallets', userWalletSchema);

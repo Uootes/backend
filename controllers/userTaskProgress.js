@@ -2,7 +2,9 @@ const Task = require('../models/task')
 const User = require('../models/user');
 const userTaskProgress = require('../models/userTaskProgress');
 
+
 const mongoose = require('mongoose');
+const { createIncubatorCard } = require('../services/incubator-utils');
 
 exports.accessUserTaskProgress = async (req, res) => {
   try {
@@ -19,9 +21,9 @@ exports.accessUserTaskProgress = async (req, res) => {
     // find an existing userTaskProgress document for this user
     let userProgress = await userTaskProgress.findOne({ userId })
       .populate({
-        path: 'tasks.taskId', 
-        model: 'Task',    
-        select: 'title description link' 
+        path: 'tasks.taskId',
+        model: 'Task',
+        select: 'title description link'
       });
 
     // Check if a userTaskProgress document was found.
@@ -45,12 +47,12 @@ exports.accessUserTaskProgress = async (req, res) => {
       }));
 
       const newProgress = new userTaskProgress({
-        userId, 
-        userName: `${user.firstName} ${user.lastName}`, 
+        userId,
+        userName: `${user.firstName} ${user.lastName}`,
         tasks: progressList,
         completedCount: 0,
         rewardClaimed: false,
-        rewardClaimedAt: null 
+        rewardClaimedAt: null
       });
 
       await newProgress.save();
@@ -59,7 +61,7 @@ exports.accessUserTaskProgress = async (req, res) => {
       await newProgress.populate({
         path: 'tasks.taskId',
         model: 'Task',
-        select: 'title description link' 
+        select: 'title description link'
       });
 
       return res.status(201).json({
@@ -125,7 +127,7 @@ exports.updateTaskStatus = async (req, res) => {
     return res.status(200).json({ message: 'Task marked as completed.', data: userProgress });
   } catch (error) {
     console.log('Error updating task status:', error);
-    res.status(500).json({ message: 'Error updating task.',error:  error.message });
+    res.status(500).json({ message: 'Error updating task.', error: error.message });
   };
 };
 
@@ -135,39 +137,26 @@ exports.claimTaskReward = async (req, res) => {
     const userProgress = await userTaskProgress.findOne({ id });
     if (!userProgress || userProgress.rewardClaimed === true) {
       return res.status(400).json({ message: 'Reward already claimed or progress not found.' });
-    };
+    }
 
     const totalTasks = await Task.countDocuments({ isActive: true });
     if (userProgress.completedCount < totalTasks) {
-      return res.status(400).json({ message: 'please complete all task to claim reward' });
-    };
-
-    const user = await User.findById(id);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+      return res.status(400).json({ message: 'Please complete all tasks to claim reward' });
+    }
 
     const CPT_REWARD = 100000;
-    user.incubatorBalance = (user.incubatorBalance || 0) + CPT_REWARD;
+    // create incubator card instead of modifying user directly
+    const card = await createIncubatorCard({ userId: id, cptAmount: CPT_REWARD});
 
-    // Set lock time based on account type
-    const lockDurations = {
-      bronze: 360,
-      silver: 168,
-      gold: 72
-    };
-
-    const lockHours = lockDurations[user.accountType.toLowerCase()] || 360;
-    user.incubatorLockUntil = new Date(Date.now() + lockHours * 60 * 60 * 1000);
-
-    await user.save();
     userProgress.rewardClaimed = true;
     await userProgress.save();
 
-    return res.status(200).json({ message: 'Reward claimed successfully.' });
-
+    return res.status(200).json({ message: 'Reward claimed successfully.', card });
   } catch (error) {
-    return res.status(500).json({ message: 'Error claiming reward.', error });
+    return res.status(500).json({ message: 'Error claiming reward.', error: error.message });
   }
 };
+
 
 exports.getUserProgressCount = async (req, res) => {
   try {
