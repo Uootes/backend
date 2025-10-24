@@ -48,7 +48,11 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: true,       
+  credentials: true,
+}));
+
 app.use(morgan('combined'));
 const baseUrl = '/api/v1';
 

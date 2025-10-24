@@ -1,6 +1,7 @@
 const Task = require('../models/task')
 const User = require('../models/user');
 const userTaskProgress = require('../models/userTaskProgress');
+const companyWalletModel = require('../models/companyWallet');
 
 
 const mongoose = require('mongoose');
@@ -134,6 +135,7 @@ exports.claimTaskReward = async (req, res) => {
   try {
     const id = req.user.id;
     const userProgress = await userTaskProgress.findOne({ id });
+    const companyWallet = await companyWalletModel.findOne();
     if (!userProgress || userProgress.rewardClaimed === true) {
       return res.status(400).json({ message: 'Reward already claimed or progress not found.' });
     }
@@ -144,6 +146,8 @@ exports.claimTaskReward = async (req, res) => {
     }
 
     const CPT_REWARD = 100000;
+    companyWallet.supplyBalance -= CPT_REWARD;
+    await companyWallet.save();
     // create incubator card instead of modifying user directly
     const card = await createIncubatorCard({ userId: id, cptAmount: CPT_REWARD});
 
@@ -155,7 +159,6 @@ exports.claimTaskReward = async (req, res) => {
     return res.status(500).json({ message: 'Error claiming reward.', error: error.message });
   }
 };
-
 
 exports.getUserProgressCount = async (req, res) => {
   try {
