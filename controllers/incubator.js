@@ -49,21 +49,27 @@ exports.activateIncubator = async (req, res) => {
 
 // Create Incubator Card
 exports.createIncubator = async (req, res) => {
-    const userId = req.user.id;
-    const { cptAmount } = req.body;
+    try {
+        const userId = req.user.id;
+        const { cptAmount } = req.body;
 
-    // Get user wallet & profile
-    const wallet = await userWalletModel.findOne({ userId });
-    const user = await User.findById(userId);
-    if (!wallet || !user) {
-        return res.status(404).json({ message: "User or wallet not found" });
+        // Get user wallet & profile
+        const wallet = await userWalletModel.findOne({ userId });
+        const user = await User.findById(userId);
+        if (!wallet || !user) {
+            return res.status(404).json({ message: "User or wallet not found" });
+        }
+        const card = await createIncubatorCard(userId, cptAmount);
+
+        res.status(201).json({ message: "Incubator card created", card });
+    } catch (error) {
+        console.error("Error creating incubator card:", error);
+        return res.status(500).json({ message: "Server error" });
     }
-    const card = await createIncubatorCard(userId, cptAmount);
-
-    res.status(201).json({ message: "Incubator card created", card });
 };
 
 exports.getUserIncubatorCards = async (req, res) => {
+try{
     const userId = req.user.id;
     const cards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
 
@@ -77,10 +83,15 @@ exports.getUserIncubatorCards = async (req, res) => {
     });
 
     res.json({ cards: formatted });
+}catch (error) {
+    console.error("Error fetching incubator cards:", error);
+    return res.status(500).json({ message: "Server error" });
+}
 };
 
 exports.getIncubatorCardByID = async (req, res) => {
-    const { id } = req.params;
+  try{
+  const { id } = req.params;
     const card = await Incubator.findById(id);
     if (!card) throw new Error("Card not found");
 
@@ -89,32 +100,43 @@ exports.getIncubatorCardByID = async (req, res) => {
     }
 
     res.json({ card });
+  }catch (error) {
+    console.error("Error fetching incubator card:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 exports.claimCard = async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.id;
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
 
-    const card = await Incubator.findOne({ _id: id, userId });
-    if (!card) throw new Error("Card not found");
-    if (card.status !== "claimable") return res.status(400).json({ messae: "Card not claimable" });
+        const card = await Incubator.findOne({ _id: id, userId });
+        if (!card) throw new Error("Card not found");
+        if (card.status !== "claimable") return res.status(400).json({ messae: "Card not claimable" });
 
-    //Credit user wallet
-    const wallet = await userWalletModel.findOne({ userId });
-    wallet.GSCBalance += card.gscWorth;
-    card.CPTBalance += card.cptAmount;
-    await wallet.save();
+        //Credit user wallet
+        const wallet = await userWalletModel.findOne({ userId });
+        card.CPTBalance += card.cptAmount;
+        await wallet.save();
 
-    // Update card status
-    card.status = "claimed";
-    await card.save();
+        // Update card status
+        card.status = "claimed";
+        await card.save();
 
-    await Incubator.deleteOne({ _id: id });
+        await Incubator.deleteOne({ _id: id });
 
-    res.json({ message: "Card claimed successfully", gscCredited: card.gscWorth, cptCredited: card.cptAmount });
+        res.json({ message: "Card claimed successfully", gscWorth: card.gscWorth, cptCredited: card.cptAmount });
+
+    } catch (error) {
+        console.error("Error claiming incubator card:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
+
 };
 
 exports.getIncubatorStatus = async (req, res) => {
+try{
     const userId = req.user.id;
     const wallet = await userWalletModel.findOne({ userId });
     const incubatorCards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
@@ -131,6 +153,10 @@ exports.getIncubatorStatus = async (req, res) => {
         activationExpiresAt: wallet?.incubatorActivation?.activationExpiresAt || null,
         incubatorCards
     });
+}catch (error) {
+    console.error("Error fetching incubator status:", error);
+    return res.status(500).json({ message: "Server error" });
+}
 }
 
 // Cron job to auto-complete cards

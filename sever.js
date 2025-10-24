@@ -86,7 +86,7 @@ cron.schedule("*/5 * * * *", async () => {
   console.log('⏰ Running scheduled deactivation tasks...');
   await deactivateActivation();
   await completeCountdown();
-  // console.log('⏰ Running scheduled autocoplettask tasks...');
+  console.log('⏰ Running scheduled autocoplettask tasks...');
 });
 
 app.listen(PORT, () => {

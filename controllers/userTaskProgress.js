@@ -78,7 +78,6 @@ exports.accessUserTaskProgress = async (req, res) => {
   };
 };
 
-
 exports.getUserTaskProgress = async (req, res) => {
   try {
 

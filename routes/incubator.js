@@ -118,7 +118,7 @@ router.post("/cards", auth, createIncubator);
  *   post:
  *     summary: Claim a completed incubator card
  *     description: >
- *       Allows the user to claim an incubator card once it is in `claimable` status.  
+ *       Allows the user to claim an incubator card once it is in `claimable` statu s.  
  *       - Credits GSC to wallet.  
  *       - Credits CPT back to wallet.  
  *       - Marks card as `claimed` and deletes it.  
