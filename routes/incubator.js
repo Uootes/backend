@@ -1,66 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { activateIncubator, claimCard, createIncubator, getUserIncubatorCards, getIncubatorCardByID, getIncubatorStatus } = require("../controllers/incubator");
-const { deactivateIncubator } = require("../controllers/incubator");
+const { claimCard, createIncubator, getUserIncubatorCards, getIncubatorCardByID, getIncubatorStatus } = require("../controllers/incubator");
 const { auth } = require("../middleware/auth");
 
-/**
- * @swagger
- * /api/v1/incubator/activate:
- *   post:
- *     summary: Activate the incubator session
- *     description: >
- *       Activates the incubator session for a user if not already active.  
- *       - Requires a wallet to exist for the user.  
- *       - Sets all locked incubator cards to active, starting their timers.  
- *       - Session expires after 6 hours.  
- *       
- *       **Behavior Details:**  
- *       - If wallet not found → 404  
- *       - If incubator already active → 400  
- *       - On success, updates wallet and cards → 200
- *     tags: [Incubator]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Incubator activated successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Incubator activated successfully
- *                 activationExpiresAt:
- *                   type: string
- *                   example: "2025-09-03T18:45:00Z"
- *       400:
- *         description: Incubator already active
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Incubator already active
- *       404:
- *         description: Wallet not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Wallet not found
- *       500:
- *         description: Server error
- */
-router.post("/activate",auth, activateIncubator);
-// router.post("/deactivate", auth, deactivateIncubator);
+
 /**
  * @swagger
  * /api/v1/incubator/cards:
@@ -103,7 +46,7 @@ router.post("/activate",auth, activateIncubator);
  *                     _id: "64a7c2fbc8a1e7e12f8a9d23"
  *                     cptAmount: 50
  *                     gscWorth: 10
- *                     status: "locked"
+ *                     status: "active"
  *       404:
  *         description: User or wallet not found
  *       500:
@@ -280,8 +223,7 @@ router.get("/cards/:id", auth, getIncubatorCardByID);
  *   get:
  *     summary: Get incubator status for a user
  *     description: >
- *       Retrieves the current incubator session status and all related incubator cards.  
- *       - Includes activation state, expiration time, and list of incubator cards.
+ *       Retrieves the current incubator status and all related incubator cards.
  *     tags: [Incubator]
  *     security:
  *       - bearerAuth: []
@@ -293,12 +235,6 @@ router.get("/cards/:id", auth, getIncubatorCardByID);
  *             schema:
  *               type: object
  *               properties:
- *                 isActivated:
- *                   type: boolean
- *                   example: true
- *                 activationExpiresAt:
- *                   type: string
- *                   example: "2025-09-03T20:00:00Z"
  *                 incubatorCards:
  *                   type: array
  *                   items:

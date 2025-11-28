@@ -2,50 +2,6 @@ const Incubator = require("../models/incubator.js");
 const userWalletModel = require("../models/userWallet");
 const User = require("../models/user");
 const { createIncubatorCard } = require("../services/incubator-utils.js");
-// activation duration in ms (6 hours)
-const ACTIVATION_DURATION = 6 * 60 * 60 * 1000;
-
-//Activate incubator session
-exports.activateIncubator = async (req, res) => {
-    try {
-        const userId = req.user.id;
-
-        let wallet = await userWalletModel.findOne({ userId });
-        if (!wallet) {
-            return res.status(404).json({ message: "Wallet not found" });
-        }
-
-        // already active
-        if (wallet.incubatorActivation.isActivated && wallet.incubatorActivation.activationExpiresAt > Date.now()) {
-            return res.status(400).json({ message: "Incubator already active" });
-        };
-
-        // activate
-        wallet.incubatorActivation.isActivated = true;
-        wallet.incubatorActivation.activationExpiresAt = Date.now() + ACTIVATION_DURATION;
-        await wallet.save();
-
-        // Resume locked cards and set to active
-        await Incubator.updateMany(
-            { userId, status: "locked" },
-            {
-                $set: {
-                    status: "active",
-                    startedAt: Date.now(),
-                    endsAt: Date.now() + ACTIVATION_DURATION,
-                },
-            }
-        );
-
-        return res.status(200).json({
-            message: "Incubator activated successfully",
-            activationExpiresAt: wallet.activationExpiresAt,
-        });
-    } catch (error) {
-        console.error("Error activating incubator:", error);
-        return res.status(500).json({ message: "Server error" });
-    }
-};
 
 // Create Incubator Card
 exports.createIncubator = async (req, res) => {
@@ -69,41 +25,41 @@ exports.createIncubator = async (req, res) => {
 };
 
 exports.getUserIncubatorCards = async (req, res) => {
-try{
-    const userId = req.user.id;
-    const cards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
+    try {
+        const userId = req.user.id;
+        const cards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
 
-    // Compute remainingTime dynamically for active ones
-    const now = Date.now();
-    const formatted = cards.map(card => {
-        if (card.status === "active" && card.endsAt) {
-            card.remainingTime = Math.max(0, card.endsAt.getTime() - now);
-        }
-        return cards;
-    });
+        // Compute remainingTime dynamically for active ones
+        const now = Date.now();
+        const formatted = cards.map(card => {
+            if (card.status === "active" && card.endsAt) {
+                card.remainingTime = Math.max(0, card.endsAt.getTime() - now);
+            }
+            return cards;
+        });
 
-    res.json({ cards: formatted });
-}catch (error) {
-    console.error("Error fetching incubator cards:", error);
-    return res.status(500).json({ message: "Server error" });
-}
+        res.json({ cards: formatted });
+    } catch (error) {
+        console.error("Error fetching incubator cards:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
 };
 
 exports.getIncubatorCardByID = async (req, res) => {
-  try{
-  const { id } = req.params;
-    const card = await Incubator.findById(id);
-    if (!card) throw new Error("Card not found");
+    try {
+        const { id } = req.params;
+        const card = await Incubator.findById(id);
+        if (!card) throw new Error("Card not found");
 
-    if (card.status === "active" && card.endsAt) {
-        card.remainingTime = Math.max(0, card.endsAt.getTime() - Date.now());
+        if (card.status === "active" && card.endsAt) {
+            card.remainingTime = Math.max(0, card.endsAt.getTime() - Date.now());
+        }
+
+        res.json({ card });
+    } catch (error) {
+        console.error("Error fetching incubator card:", error);
+        return res.status(500).json({ message: "Server error" });
     }
-
-    res.json({ card });
-  }catch (error) {
-    console.error("Error fetching incubator card:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
 };
 
 exports.claimCard = async (req, res) => {
@@ -130,33 +86,31 @@ exports.claimCard = async (req, res) => {
 
     } catch (error) {
         console.error("Error claiming incubator card:", error);
-        return res.status(500).json({ message: "Server error" });
+        return res.status(500).json({ message: "Server error", error: error.message });
     }
 
 };
 
 exports.getIncubatorStatus = async (req, res) => {
-try{
-    const userId = req.user.id;
-    const wallet = await userWalletModel.findOne({ userId });
-    const incubatorCards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
-    if (!wallet) {
-        return res.status(404).json({ message: "Wallet not found" });
-    }
+    try {
+        const userId = req.user.id;
+        const wallet = await userWalletModel.findOne({ userId });
+        const incubatorCards = await Incubator.find({ userId }).select('cptAmount gscWorth status endsAt remainingTime');
+        if (!wallet) {
+            return res.status(404).json({ message: "Wallet not found" });
+        }
 
-    if (!incubatorCards || incubatorCards.length === 0) {
-        return null;
-    }
+        if (!incubatorCards || incubatorCards.length === 0) {
+            return null;
+        }
 
-    res.json({
-        isActivated: wallet?.incubatorActivation?.isActivated || false,
-        activationExpiresAt: wallet?.incubatorActivation?.activationExpiresAt || null,
-        incubatorCards
-    });
-}catch (error) {
-    console.error("Error fetching incubator status:", error);
-    return res.status(500).json({ message: "Server error" });
-}
+        res.json({
+            incubatorCards
+        });
+    } catch (error) {
+        console.error("Error fetching incubator status:", error);
+        return res.status(500).json({ message: "Server error" });
+    }
 }
 
 // Cron job to auto-complete cards
@@ -182,43 +136,5 @@ exports.completeCountdown = async () => {
         }
     } catch (err) {
         console.error("Error in autoCompleteJob:", err);
-    }
-};
-
-//Deactivate incubator session(cron job)
-exports.deactivateActivation = async () => {
-    try {
-        const now = Date.now();
-
-        // Find wallets whose activation expired
-        const expiredWallets = await userWalletModel.find({
-            "incubatorActivation.isActivated": true,
-            "incubatorActivation.activationExpiresAt": { $lte: now },
-        });
-
-        for (const wallet of expiredWallets) {
-            wallet.incubatorActivation.isActivated = false;
-            wallet.incubatorActivation.activationExpiresAt = null;
-            await wallet.save();
-
-            // Lock all active incubator cards for this user
-            const activeCards = await Incubator.find({
-                userId: wallet.userId,
-                status: "active"
-            });
-
-            for (const card of activeCards) {
-                const remainingTime = card.endsAt ? Math.max(card.endsAt - now, 0) : 0;
-                card.status = "locked";
-                card.remainingTime = remainingTime;
-                await card.save();
-            }
-
-            console.log(
-                `Deactivated incubator for user ${wallet.userId}, locked ${activeCards.length} cards`
-            );
-        }
-    } catch (err) {
-        console.error("Error in autoDeactivateJob:", err);
     }
 };

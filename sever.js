@@ -20,7 +20,7 @@ const cron = require('node-cron');
 const { splittingRevenue } = require('./utils/companyWallet');
 const userTaskProgressRoute = require('./routes/user.taskProgress')
 const incubatorRoutes = require('./routes/incubator');
-const { deactivateActivation, completeCountdown } = require('./controllers/incubator');
+const { completeCountdown } = require('./controllers/incubator');
 
 
 const swaggerOptions = {
@@ -49,7 +49,7 @@ const swaggerSpec = swaggerJsdoc(swaggerOptions);
 
 app.use(express.json());
 app.use(cors({
-  origin: true,       
+  origin: true,
   credentials: true,
 }));
 
@@ -87,10 +87,9 @@ cron.schedule('0 */6 * * *', async () => {
 
 // Run every 5 minutes
 cron.schedule("*/5 * * * *", async () => {
-  console.log('⏰ Running scheduled deactivation tasks...');
-  await deactivateActivation();
+  console.log('⏰ Running scheduled autocomplete tasks...');
   await completeCountdown();
-  console.log('⏰ Running scheduled autocoplettask tasks...');
+  console.log('✅ Autocomplete tasks completed');
 });
 
 app.listen(PORT, () => {

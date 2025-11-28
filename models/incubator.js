@@ -8,19 +8,19 @@ const incubatorCardSchema = new mongoose.Schema({
         required: true
     },
 
-    cptAmount: { type: Number, required: true },  
-    gscWorth: { type: Number, required: true }, 
+    cptAmount: { type: Number, required: true },
+    gscWorth: { type: Number, required: true },
 
-    totalDuration: { type: Number, required: true },  
-    remainingTime: { type: Number, required: true },  
+    totalDuration: { type: Number, required: true },
+    remainingTime: { type: Number, required: true },
 
-    startedAt: { type: Date }, 
-    endsAt: { type: Date },   
+    startedAt: { type: Date },
+    endsAt: { type: Date },
 
     status: {
         type: String,
-        enum: ['locked','active', 'claimable', 'claimed'],
-        default: 'locked'
+        enum: ['active', 'claimable', 'claimed'],
+        default: 'active'
     },
 }, { timestamps: true });
 
